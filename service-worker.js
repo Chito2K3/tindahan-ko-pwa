@@ -77,6 +77,15 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+async function getSales() {
+  try {
+    return JSON.parse(localStorage.getItem('sales') || '[]');
+  } catch (error) {
+    console.error('Error getting sales:', error);
+    return [];
+  }
+}
+
 // Sync offline sales when back online
 async function syncSales() {
   try {
@@ -84,7 +93,7 @@ async function syncSales() {
     
     if (offlineSales.length > 0) {
       // Process offline sales
-      const sales = JSON.parse(localStorage.getItem('sales') || '[]');
+      const sales = await getSales();
       sales.push(...offlineSales);
       localStorage.setItem('sales', JSON.stringify(sales));
       
@@ -167,7 +176,7 @@ async function performQuarterlyCleanup() {
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     
     // Clean old sales data
-    const sales = JSON.parse(localStorage.getItem('sales') || '[]');
+    const sales = await getSales();
     const recentSales = sales.filter(sale => new Date(sale.timestamp) > threeMonthsAgo);
     
     if (sales.length !== recentSales.length) {

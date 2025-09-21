@@ -37,8 +37,8 @@ class TindahanKo {
             this.storeInfo = JSON.parse(localStorage.getItem('tindahan_store') || '{}');
             this.isFirstTime = !localStorage.getItem('tindahan_setup_complete');
         } catch (error) {
-            console.error('Error loading data:', error);
-            this.showToast('Error sa pag-load ng data', 'error');
+            console.error('Error loading data from localStorage:', error);
+            this.showToast('May problema sa pag-load ng data. Subukang i-refresh ang page.', 'error');
         }
     }
 
@@ -48,8 +48,8 @@ class TindahanKo {
             localStorage.setItem('tindahan_sales', JSON.stringify(this.sales));
             localStorage.setItem('tindahan_store', JSON.stringify(this.storeInfo));
         } catch (error) {
-            console.error('Error saving data:', error);
-            this.showToast('Error sa pag-save ng data', 'error');
+            console.error('Error saving data to localStorage:', error);
+            this.showToast('May problema sa pag-save ng data. Baka puno na ang storage.', 'error');
         }
     }
 
@@ -589,7 +589,7 @@ class TindahanKo {
     calculateProfit(cartItems) {
         // Simple profit calculation - assuming 30% markup
         return cartItems.reduce((profit, item) => {
-            const cost = item.price * 0.7; // Assuming 30% markup
+            const cost = item.price / 1.3; // Assuming 30% markup
             return profit + ((item.price - cost) * item.quantity);
         }, 0);
     }
@@ -987,7 +987,7 @@ class TindahanKo {
             try {
                 const data = JSON.parse(e.target.result);
                 
-                if (confirm('Import data? Mawawala ang current data.')) {
+                if (confirm('Sigurado ka bang gusto mong i-import ang data? Mawawala ang kasalukuyang data.')) {
                     this.products = data.products || [];
                     this.sales = data.sales || [];
                     this.storeInfo = data.storeInfo || {};
@@ -1000,8 +1000,13 @@ class TindahanKo {
                     this.showToast('Data imported successfully! 📥', 'success');
                 }
             } catch (error) {
-                this.showToast('Error importing data', 'error');
+                console.error('Error parsing imported file:', error);
+                this.showToast('Invalid JSON file. Pakisuri ang file at subukang muli.', 'error');
             }
+        };
+        reader.onerror = () => {
+            console.error('Error reading file:', reader.error);
+            this.showToast('May problema sa pagbasa ng file.', 'error');
         };
         reader.readAsText(file);
     }
