@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tindahan Ko - Para sa mga Reyna ng Tahanan 👑</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#ff69b4">
+    <meta name="description" content="POS at Inventory System para sa mga Sari-Sari Store">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="loading-title">Tindahan Ko</h1>
+            <p class="loading-subtitle">Para sa mga Reyna ng Tahanan 👑</p>
+            <div class="loading-spinner"></div>
+        </div>
+        <div class="floating-hearts"></div>
+    </div>
+
+    <!-- First Time Setup Modal -->
+    <div id="setup-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Maligayang Pagdating! 🎉</h2>
+            <p>I-setup natin ang inyong tindahan:</p>
+            <form id="setup-form">
+                <div class="form-group">
+                    <label for="store-name">Pangalan ng Tindahan:</label>
+                    <input type="text" id="store-name" required placeholder="Halimbawa: Aling Maria's Store">
+                </div>
+                <div class="form-group">
+                    <label for="owner-name">Pangalan ng May-ari:</label>
+                    <input type="text" id="owner-name" required placeholder="Halimbawa: Maria Santos">
+                </div>
+                <div class="form-group">
+                    <label for="store-address">Address:</label>
+                    <textarea id="store-address" placeholder="Halimbawa: 123 Sampaguita St., Barangay Maligaya"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Simulan na! 💖</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">Tindahan Ko</h1>
+                <p class="app-subtitle">Para sa mga Reyna ng Tahanan 👑</p>
+                <div class="store-info">
+                    <span id="store-display-name">Aling Maria's Store</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="benta">
+                <span class="nav-icon">💰</span>
+                <span class="nav-label">Benta</span>
+            </button>
+            <button class="nav-item" data-page="tindahan">
+                <span class="nav-icon">📦</span>
+                <span class="nav-label">Tindahan</span>
+            </button>
+            <button class="nav-item" data-page="ulat">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Ulat</span>
+            </button>
+            <button class="nav-item" data-page="ayos">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Ayos</span>
+            </button>
+        </nav>
+
+        <!-- Page Content -->
+        <main class="main-content">
+            <!-- Benta (POS) Page -->
+            <div id="benta-page" class="page active">
+                <div class="page-header">
+                    <h2>💰 Benta - Point of Sale</h2>
+                    <div class="quick-actions">
+                        <button class="btn btn-secondary" id="clear-cart">Linisin 🗑️</button>
+                        <button class="btn btn-primary" id="process-payment" disabled>Bayad 💳</button>
+                    </div>
+                </div>
+
+                <div class="pos-container">
+                    <!-- Product Search & Selection -->
+                    <div class="product-section">
+                        <div class="search-container">
+                            <input type="text" id="product-search" placeholder="Hanapin ang produkto... 🔍">
+                            <button class="btn btn-secondary" id="barcode-scan">Scan Barcode 📱</button>
+                        </div>
+                        
+                        <!-- Quick Select Categories -->
+                        <div class="categories">
+                            <button class="category-btn active" data-category="all">Lahat</button>
+                            <button class="category-btn" data-category="snacks">🍿 Snacks</button>
+                            <button class="category-btn" data-category="drinks">🥤 Inumin</button>
+                            <button class="category-btn" data-category="household">🏠 Gamit</button>
+                            <button class="category-btn" data-category="personal">👤 Personal</button>
+                        </div>
+
+                        <!-- Product Grid -->
+                        <div class="product-grid" id="product-grid">
+                            <!-- Products will be dynamically loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Shopping Cart -->
+                    <div class="cart-section">
+                        <h3>🛒 Cart</h3>
+                        <div class="cart-items" id="cart-items">
+                            <div class="empty-cart">
+                                <p>Walang laman ang cart 🛒</p>
+                                <p>Pumili ng produkto sa kaliwa</p>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-summary">
+                            <div class="summary-row">
+                                <span>Subtotal:</span>
+                                <span id="cart-subtotal">₱0.00</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total:</span>
+                                <span id="cart-total">₱0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tindahan (Inventory) Page -->
+            <div id="tindahan-page" class="page">
+                <div class="page-header">
+                    <h2>📦 Tindahan - Inventory</h2>
+                    <div class="quick-actions">
+                        <button class="btn btn-primary" id="add-product">Dagdag Produkto ➕</button>
+                        <button class="btn btn-secondary" id="low-stock-alert">Low Stock 🔔</button>
+                    </div>
+                </div>
+
+                <div class="inventory-stats">
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-products">0</span>
+                        <span class="stat-label">Total na Produkto</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="low-stock-count">0</span>
+                        <span class="stat-label">Mababang Stock</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-value">₱0</span>
+                        <span class="stat-label">Kabuuang Halaga</span>
+                    </div>
+                </div>
+
+                <div class="inventory-controls">
+                    <input type="text" id="inventory-search" placeholder="Hanapin sa inventory... 🔍">
+                    <select id="inventory-filter">
+                        <option value="all">Lahat ng Kategorya</option>
+                        <option value="snacks">🍿 Snacks</option>
+                        <option value="drinks">🥤 Inumin</option>
+                        <option value="household">🏠 Gamit</option>
+                        <option value="personal">👤 Personal</option>
+                    </select>
+                </div>
+
+                <div class="inventory-list" id="inventory-list">
+                    <!-- Inventory items will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Ulat (Reports) Page -->
+            <div id="ulat-page" class="page">
+                <div class="page-header">
+                    <h2>📊 Ulat - Sales Reports</h2>
+                    <div class="quick-actions">
+                        <select id="report-period">
+                            <option value="today">Ngayong Araw</option>
+                            <option value="week">Linggong Ito</option>
+                            <option value="month">Buwan na Ito</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="report-stats">
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-sales">₱0</span>
+                        <span class="stat-label">Kabuuang Benta</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-profit">₱0</span>
+                        <span class="stat-label">Kita Ko 💰</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="transaction-count">0</span>
+                        <span class="stat-label">Bilang ng Benta</span>
+                    </div>
+                </div>
+
+                <div class="reports-container">
+                    <div class="chart-container">
+                        <h3>📈 Sales Chart</h3>
+                        <canvas id="sales-chart"></canvas>
+                    </div>
+                    
+                    <div class="top-products">
+                        <h3>🏆 Top Products</h3>
+                        <div id="top-products-list">
+                            <!-- Top products will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ayos (Settings) Page -->
+            <div id="ayos-page" class="page">
+                <div class="page-header">
+                    <h2>⚙️ Ayos - Settings</h2>
+                </div>
+
+                <div class="settings-sections">
+                    <div class="settings-section">
+                        <h3>🏪 Store Information</h3>
+                        <div class="setting-item">
+                            <label for="settings-store-name">Pangalan ng Tindahan:</label>
+                            <input type="text" id="settings-store-name">
+                        </div>
+                        <div class="setting-item">
+                            <label for="settings-owner-name">May-ari:</label>
+                            <input type="text" id="settings-owner-name">
+                        </div>
+                        <div class="setting-item">
+                            <label for="settings-store-address">Address:</label>
+                            <textarea id="settings-store-address"></textarea>
+                        </div>
+                        <button class="btn btn-primary" id="save-store-info">I-save 💾</button>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>💾 Data Management</h3>
+                        <div class="setting-item">
+                            <button class="btn btn-secondary" id="export-data">Export Data (CSV) 📤</button>
+                            <p class="setting-desc">I-download ang lahat ng data</p>
+                        </div>
+                        <div class="setting-item">
+                            <input type="file" id="import-data" accept=".csv" style="display: none;">
+                            <button class="btn btn-secondary" id="import-btn">Import Data (CSV) 📥</button>
+                            <p class="setting-desc">Mag-upload ng backup data</p>
+                        </div>
+                        <div class="setting-item">
+                            <button class="btn btn-danger" id="cleanup-data">Quarterly Cleanup 🧹</button>
+                            <p class="setting-desc">Tanggalin ang lumang data (3+ months)</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>🎨 Personalization</h3>
+                        <div class="setting-item">
+                            <label for="theme-selector">Theme:</label>
+                            <select id="theme-selector">
+                                <option value="pink">Pink Princess 💖</option>
+                                <option value="purple">Purple Queen 💜</option>
+                                <option value="blue">Blue Belle 💙</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>ℹ️ About</h3>
+                        <p>Tindahan Ko v1.0</p>
+                        <p>Para sa mga Reyna ng Tahanan 👑</p>
+                        <p>Made with 💖 for Filipino Entrepreneurs</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>💳 Proseso ng Bayad</h3>
+            <div class="payment-summary">
+                <div class="summary-row">
+                    <span>Total:</span>
+                    <span id="payment-total">₱0.00</span>
+                </div>
+            </div>
+            
+            <div class="payment-methods">
+                <button class="payment-method active" data-method="cash">
+                    <span>💵</span>
+                    <span>Cash</span>
+                </button>
+                <button class="payment-method" data-method="gcash">
+                    <span>📱</span>
+                    <span>GCash</span>
+                </button>
+            </div>
+
+            <div id="cash-payment" class="payment-form">
+                <div class="form-group">
+                    <label for="amount-received">Bayad na Natanggap:</label>
+                    <input type="number" id="amount-received" step="0.01" min="0">
+                </div>
+                <div class="change-display">
+                    <span>Sukli:</span>
+                    <span id="change-amount">₱0.00</span>
+                </div>
+            </div>
+
+            <div id="gcash-payment" class="payment-form hidden">
+                <p>📱 GCash Payment</p>
+                <p>Mag-scan ng QR code o magpadala sa:</p>
+                <p><strong>09XX-XXX-XXXX</strong></p>
+                <button class="btn btn-secondary" id="gcash-confirm">Confirm Payment ✅</button>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-payment">Cancel</button>
+                <button class="btn btn-primary" id="complete-payment">Complete Sale 🎉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="product-modal-title">Dagdag/Edit Produkto</h3>
+            <form id="product-form">
+                <div class="form-group">
+                    <label for="product-name">Pangalan ng Produkto:</label>
+                    <input type="text" id="product-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-price">Presyo:</label>
+                    <input type="number" id="product-price" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-stock">Stock:</label>
+                    <input type="number" id="product-stock" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-category">Kategorya:</label>
+                    <select id="product-category" required>
+                        <option value="snacks">🍿 Snacks</option>
+                        <option value="drinks">🥤 Inumin</option>
+                        <option value="household">🏠 Gamit</option>
+                        <option value="personal">👤 Personal</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="product-emoji">Emoji/Icon:</label>
+                    <input type="text" id="product-emoji" maxlength="2" placeholder="🍪">
+                </div>
+                <div class="form-group">
+                    <label for="product-reorder">Reorder Level:</label>
+                    <input type="number" id="product-reorder" min="0" value="5">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="product-barcode">
+                        May Barcode
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-product">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save 💾</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal" class="modal hidden">
+        <div class="modal-content receipt">
+            <div class="receipt-header">
+                <h3 id="receipt-store-name">Tindahan Ko</h3>
+                <p id="receipt-store-address">Address</p>
+                <p id="receipt-datetime">Date & Time</p>
+            </div>
+            <div class="receipt-items" id="receipt-items">
+                <!-- Receipt items will be populated here -->
+            </div>
+            <div class="receipt-summary">
+                <div class="receipt-row">
+                    <span>Subtotal:</span>
+                    <span id="receipt-subtotal">₱0.00</span>
+                </div>
+                <div class="receipt-row total">
+                    <span>Total:</span>
+                    <span id="receipt-total">₱0.00</span>
+                </div>
+                <div class="receipt-row">
+                    <span>Bayad:</span>
+                    <span id="receipt-payment">₱0.00</span>
+                </div>
+                <div class="receipt-row">
+                    <span>Sukli:</span>
+                    <span id="receipt-change">₱0.00</span>
+                </div>
+            </div>
+            <div class="receipt-footer">
+                <p>Salamat sa inyong pagbili! 💖</p>
+                <p>Bumalik kayo ulit! 👑</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="print-receipt">Print 🖨️</button>
+                <button class="btn btn-primary" id="close-receipt">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+        <button id="toast-close">×</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
