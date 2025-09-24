@@ -815,11 +815,12 @@ class TindahanKo {
         document.getElementById('amount-received').value = '';
         document.getElementById('change-amount').textContent = '₱0.00';
         
-        // Set cash as default
+        // Set cash as default and disable complete button
         document.querySelectorAll('.payment-method').forEach(btn => btn.classList.remove('active'));
         document.querySelector('[data-method="cash"]').classList.add('active');
         document.getElementById('cash-payment').classList.remove('hidden');
         document.getElementById('gcash-payment').classList.add('hidden');
+        document.getElementById('complete-payment').disabled = true;
     }
 
     // Utility Functions
@@ -866,9 +867,11 @@ class TindahanKo {
                 if (method === 'cash') {
                     document.getElementById('cash-payment').classList.remove('hidden');
                     document.getElementById('gcash-payment').classList.add('hidden');
+                    this.calculateChange(); // Recalculate to update button state
                 } else {
                     document.getElementById('cash-payment').classList.add('hidden');
                     document.getElementById('gcash-payment').classList.remove('hidden');
+                    document.getElementById('complete-payment').disabled = false; // Enable for GCash
                 }
             });
         });
@@ -945,7 +948,13 @@ class TindahanKo {
         document.getElementById('change-amount').textContent = this.formatCurrency(Math.max(0, change));
         
         const completeBtn = document.getElementById('complete-payment');
-        completeBtn.disabled = received < total;
+        const activeMethod = document.querySelector('.payment-method.active').dataset.method;
+        
+        if (activeMethod === 'cash') {
+            completeBtn.disabled = received < total || received === 0;
+        } else {
+            completeBtn.disabled = false; // GCash doesn't need amount validation
+        }
     }
 
     completeSale(paymentMethod = 'cash') {
