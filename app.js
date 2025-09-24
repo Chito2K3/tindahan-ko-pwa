@@ -1407,22 +1407,32 @@ class TindahanKo {
     }
 
     exportData() {
-        const data = {
-            products: this.products,
-            sales: this.sales,
-            storeInfo: this.storeInfo,
-            exportDate: new Date().toISOString()
-        };
+        let csvContent = '';
+        
+        // Products CSV
+        csvContent += 'PRODUCTS\n';
+        csvContent += 'ID,Name,Price,Stock,Category,Emoji,Reorder Level,Has Barcode,Barcode\n';
+        this.products.forEach(product => {
+            csvContent += `${product.id},"${product.name}",${product.price},${product.stock},${product.category},${product.emoji},${product.reorderLevel},${product.hasBarcode},${product.barcode || ''}\n`;
+        });
+        
+        // Sales CSV
+        csvContent += '\nSALES\n';
+        csvContent += 'ID,Date,Total,Payment Method,Received,Change,Profit\n';
+        this.sales.forEach(sale => {
+            const date = new Date(sale.timestamp).toLocaleDateString('en-PH');
+            csvContent += `${sale.id},${date},${sale.total},${sale.paymentMethod},${sale.received},${sale.change},${sale.profit}\n`;
+        });
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `tindahan-ko-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `tindahan-ko-data-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         URL.revokeObjectURL(url);
 
-        this.showToast('Data exported successfully! 📤', 'success');
+        this.showToast('CSV data exported successfully! 📤', 'success');
     }
 
     importData(file) {
@@ -1431,23 +1441,22 @@ class TindahanKo {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const data = JSON.parse(e.target.result);
+                const csvData = e.target.result;
+                const lines = csvData.split('\n');
                 
-                if (confirm('Sigurado ka bang gusto mong i-import ang data? Mawawala ang kasalukuyang data.')) {
-                    this.products = data.products || [];
-                    this.sales = data.sales || [];
-                    this.storeInfo = data.storeInfo || {};
+                if (confirm('Sigurado ka bang gusto mong i-import ang CSV data? Mawawala ang kasalukuyang data.')) {
+                    this.parseCSVData(lines);
                     
                     this.saveData();
                     this.renderInventory();
                     this.updateInventoryStats();
                     this.loadSettings();
                     
-                    this.showToast('Data imported successfully! 📥', 'success');
+                    this.showToast('CSV data imported successfully! 📥', 'success');
                 }
             } catch (error) {
-                console.error('Error parsing imported file:', error);
-                this.showToast('Invalid JSON file. Pakisuri ang file at subukang muli.', 'error');
+                console.error('Error parsing CSV file:', error);
+                this.showToast('Invalid CSV file. Pakisuri ang format ng file.', 'error');
             }
         };
         reader.onerror = () => {
@@ -1455,6 +1464,86 @@ class TindahanKo {
             this.showToast('May problema sa pagbasa ng file.', 'error');
         };
         reader.readAsText(file);
+    }
+
+    parseCSVData(lines) {
+        let currentSection = '';
+        let products = [];
+        let sales = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line === 'PRODUCTS') {
+                currentSection = 'products';
+                i++; // Skip header
+                continue;
+            }
+            
+            if (line === 'SALES') {
+                currentSection = 'sales';
+                i++; // Skip header
+                continue;
+            }
+            
+            if (line && currentSection === 'products') {
+                const cols = this.parseCSVLine(line);
+                if (cols.length >= 9) {
+                    products.push({
+                        id: cols[0],
+                        name: cols[1],
+                        price: parseFloat(cols[2]),
+                        stock: parseInt(cols[3]),
+                        category: cols[4],
+                        emoji: cols[5],
+                        reorderLevel: parseInt(cols[6]),
+                        hasBarcode: cols[7] === 'true',
+                        barcode: cols[8]
+                    });
+                }
+            }
+            
+            if (line && currentSection === 'sales') {
+                const cols = this.parseCSVLine(line);
+                if (cols.length >= 7) {
+                    sales.push({
+                        id: cols[0],
+                        timestamp: new Date(cols[1]).toISOString(),
+                        total: parseFloat(cols[2]),
+                        paymentMethod: cols[3],
+                        received: parseFloat(cols[4]),
+                        change: parseFloat(cols[5]),
+                        profit: parseFloat(cols[6]),
+                        items: [] // Items data not preserved in CSV
+                    });
+                }
+            }
+        }
+        
+        this.products = products;
+        this.sales = sales;
+    }
+
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current.trim());
+        return result;
     }
 
     cleanupData() {
