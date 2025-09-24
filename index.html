@@ -142,54 +142,50 @@
                     <h2>💰 Benta - Point of Sale</h2>
                     <div class="quick-actions">
                         <button class="btn btn-secondary" id="clear-cart">Linisin 🗑️</button>
-                        <button class="btn btn-primary" id="process-payment" disabled>Bayad 💳</button>
                     </div>
                 </div>
 
-                <div class="pos-container">
-                    <!-- Product Search & Selection -->
-                    <div class="product-section">
-                        <div class="search-container">
-                            <input type="text" id="product-search" placeholder="Hanapin ang produkto... 🔍">
-                            <button class="btn btn-secondary" id="barcode-scan">Scan Barcode 📱</button>
-                        </div>
-                        
-                        <!-- Quick Select Categories -->
-                        <div class="categories">
-                            <button class="category-btn active" data-category="all">Lahat</button>
-                            <button class="category-btn" data-category="snacks">🍿 Snacks</button>
-                            <button class="category-btn" data-category="drinks">🥤 Inumin</button>
-                            <button class="category-btn" data-category="household">🏠 Gamit</button>
-                            <button class="category-btn" data-category="personal">👤 Personal</button>
-                        </div>
+                <div class="search-container">
+                    <input type="text" id="product-search" placeholder="Hanapin ang produkto... 🔍">
+                    <button class="btn btn-secondary" id="barcode-scan">Scan Barcode 📱</button>
+                </div>
+                
+                <!-- Quick Select Categories -->
+                <div class="categories">
+                    <button class="category-btn active" data-category="all">Lahat</button>
+                    <button class="category-btn" data-category="snacks">🍿 Snacks</button>
+                    <button class="category-btn" data-category="drinks">🥤 Inumin</button>
+                    <button class="category-btn" data-category="household">🏠 Gamit</button>
+                    <button class="category-btn" data-category="personal">👤 Personal</button>
+                </div>
 
-                        <!-- Product Grid -->
-                        <div class="product-grid" id="product-grid">
-                            <!-- Products will be dynamically loaded here -->
+                <!-- Product Grid -->
+                <div class="product-grid" id="product-grid">
+                    <!-- Products will be dynamically loaded here -->
+                </div>
+
+                <!-- Shopping Cart -->
+                <div class="cart-section">
+                    <h3>🛒 Cart</h3>
+                    <div class="cart-items" id="cart-items">
+                        <div class="empty-cart">
+                            <p>Walang laman ang cart 🛒</p>
+                            <p>Pumili ng produkto sa kaliwa</p>
                         </div>
                     </div>
-
-                    <!-- Shopping Cart -->
-                    <div class="cart-section">
-                        <h3>🛒 Cart</h3>
-                        <div class="cart-items" id="cart-items">
-                            <div class="empty-cart">
-                                <p>Walang laman ang cart 🛒</p>
-                                <p>Pumili ng produkto sa kaliwa</p>
-                            </div>
+                    
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="cart-subtotal">₱0.00</span>
                         </div>
-                        
-                        <div class="cart-summary">
-                            <div class="summary-row">
-                                <span>Subtotal:</span>
-                                <span id="cart-subtotal">₱0.00</span>
-                            </div>
-                            <div class="summary-row total">
-                                <span>Total:</span>
-                                <span id="cart-total">₱0.00</span>
-                            </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="cart-total">₱0.00</span>
                         </div>
                     </div>
+                    
+                    <button class="btn btn-primary" id="process-payment" disabled>Bayad 💳</button>
                 </div>
             </div>
 

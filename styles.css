@@ -416,21 +416,6 @@ textarea {
 .mb-2 { margin-bottom: 1rem; }
 
 /* POS (Benta) Styles */
-.pos-container {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  min-height: 500px;
-}
-
-.product-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-soft);
-}
 
 .search-container {
   display: flex;
@@ -530,6 +515,12 @@ textarea {
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
+  margin-top: 2rem;
+}
+
+.cart-section .btn {
+  margin-top: 1rem;
+  width: 100%;
 }
 
 .cart-section h3 {
@@ -1283,10 +1274,7 @@ textarea {
     padding-bottom: 100px;
   }
   
-  .pos-container {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+
   
   .reports-container {
     grid-template-columns: 1fr;
