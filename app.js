@@ -23,6 +23,9 @@ class TindahanKo {
         this.audioContext = null;
         this.scanMode = 'pos'; // 'pos' or 'inventory'
         
+        // PWA Install
+        this.deferredPrompt = null;
+        
         this.init();
     }
 
@@ -30,6 +33,7 @@ class TindahanKo {
     init() {
         this.loadData();
         this.setupEventListeners();
+        this.setupPWAInstall();
         this.checkFirstTimeSetup();
         this.loadSampleData();
         
@@ -1376,6 +1380,10 @@ class TindahanKo {
         document.getElementById('theme-selector').addEventListener('change', (e) => {
             this.changeTheme(e.target.value);
         });
+
+        document.getElementById('install-app').addEventListener('click', () => {
+            this.installPWA();
+        });
     }
 
     loadSettings() {
@@ -1496,6 +1504,54 @@ class TindahanKo {
                 root.style.setProperty('--gradient-secondary', 'linear-gradient(135deg, #ffb6c1, #ff69b4)');
         }
     }
+
+    // PWA Installation
+    setupPWAInstall() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            this.showInstallButton();
+        });
+
+        window.addEventListener('appinstalled', () => {
+            this.deferredPrompt = null;
+            this.hideInstallButton();
+            this.showToast('App installed successfully! 🎉', 'success');
+        });
+    }
+
+    showInstallButton() {
+        const installBtn = document.getElementById('install-app');
+        if (installBtn) {
+            installBtn.style.display = 'inline-flex';
+            installBtn.disabled = false;
+        }
+    }
+
+    hideInstallButton() {
+        const installBtn = document.getElementById('install-app');
+        if (installBtn) {
+            installBtn.style.display = 'none';
+        }
+    }
+
+    async installPWA() {
+        if (!this.deferredPrompt) {
+            this.showToast('App is already installed or not available for install', 'warning');
+            return;
+        }
+
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            this.showToast('Installing app... 📲', 'success');
+        } else {
+            this.showToast('Installation cancelled', 'warning');
+        }
+        
+        this.deferredPrompt = null;
+    }
 }
 
 // Initialize the app when DOM is loaded
@@ -1503,8 +1559,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = new TindahanKo();
 });
 
-// Service Worker Registration (only for HTTPS/localhost)
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
             .then(registration => {
