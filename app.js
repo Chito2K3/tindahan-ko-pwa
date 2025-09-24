@@ -501,7 +501,7 @@ class TindahanKo {
         this.scannerActive = true;
         this.scanCount = 0;
         
-        statusText.textContent = 'Nagsisimula ang professional scanner...';
+        statusText.textContent = 'Nagsisimula ang camera...';
         this.playSound('startup');
         
         // Initialize performance counters
@@ -509,70 +509,66 @@ class TindahanKo {
         
         try {
             await this.initQuaggaScanner();
+            statusText.textContent = 'I-point ang barcode sa gitna ng frame...';
         } catch (error) {
-            console.error('QuaggaJS error:', error);
-            statusText.textContent = 'Camera error. Ginagamit ang fallback mode...';
+            console.error('Camera error:', error);
+            statusText.textContent = 'Hindi ma-access ang camera. Ginagamit ang simulation...';
             setTimeout(() => this.fallbackScannerMode(), 2000);
         }
     }
 
     async initQuaggaScanner() {
-        const cores = navigator.hardwareConcurrency || 4;
-        const battery = await this.getBatteryInfo();
-        const quality = battery?.level > 0.2 ? 'HD' : 'SD';
-        
-        document.getElementById('quality-indicator').textContent = quality;
-        
-        return new Promise((resolve, reject) => {
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-viewport'),
-                    constraints: {
-                        width: quality === 'HD' ? 1280 : 640,
-                        height: quality === 'HD' ? 720 : 480,
-                        facingMode: "environment"
-                    },
-                    area: {
-                        top: "25%",
-                        right: "25%",
-                        left: "25%",
-                        bottom: "25%"
-                    }
-                },
-                locator: {
-                    patchSize: "medium",
-                    halfSample: quality === 'SD'
-                },
-                numOfWorkers: Math.min(cores, 4),
-                frequency: quality === 'HD' ? 10 : 5,
-                decoder: {
-                    readers: [
-                        "ean_reader",
-                        "ean_8_reader", 
-                        "code_128_reader",
-                        "code_39_reader",
-                        "code_93_reader",
-                        "i2of5_reader"
-                    ]
-                },
-                locate: true
-            }, (err) => {
-                if (err) {
-                    reject(err);
-                    return;
+        try {
+            // First try direct camera access
+            const video = document.getElementById('scanner-video');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 720, min: 480 }
                 }
-                
-                document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
-                Quagga.start();
-                
-                // Set up barcode detection
-                Quagga.onDetected(this.onBarcodeDetected.bind(this));
-                
-                resolve();
             });
-        });
+            
+            video.srcObject = stream;
+            document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
+            
+            // Initialize QuaggaJS with the video stream
+            return new Promise((resolve, reject) => {
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: video,
+                        constraints: {
+                            facingMode: "environment"
+                        }
+                    },
+                    decoder: {
+                        readers: [
+                            "ean_reader",
+                            "ean_8_reader", 
+                            "code_128_reader",
+                            "code_39_reader"
+                        ]
+                    },
+                    locate: true
+                }, (err) => {
+                    if (err) {
+                        console.error('QuaggaJS init error:', err);
+                        // Continue with basic camera without barcode detection
+                        resolve();
+                        return;
+                    }
+                    
+                    Quagga.start();
+                    Quagga.onDetected(this.onBarcodeDetected.bind(this));
+                    resolve();
+                });
+            });
+            
+        } catch (error) {
+            throw new Error('Camera access denied or not available');
+        }
     }
 
     async getBatteryInfo() {
@@ -706,6 +702,14 @@ class TindahanKo {
             Quagga.stop();
         } catch (e) {
             console.warn('Quagga stop error:', e);
+        }
+        
+        // Stop camera stream
+        const video = document.getElementById('scanner-video');
+        if (video && video.srcObject) {
+            const tracks = video.srcObject.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
         }
         
         document.getElementById('barcode-modal').classList.add('hidden');

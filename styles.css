@@ -1127,6 +1127,18 @@ textarea {
   height: 100%;
   object-fit: cover;
   display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#scanner-video {
+  z-index: 1;
+}
+
+#scanner-viewport canvas {
+  z-index: 2;
+  pointer-events: none;
 }
 
 .scanner-overlay {
