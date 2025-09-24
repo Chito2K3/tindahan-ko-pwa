@@ -515,7 +515,7 @@ class TindahanKo {
         this.startPerformanceMonitoring();
         
         try {
-            await this.initQuaggaScanner();
+            await this.initZXingScanner();
             statusText.textContent = 'I-point ang barcode sa gitna ng frame...';
         } catch (error) {
             console.error('Camera error:', error);
@@ -524,102 +524,47 @@ class TindahanKo {
         }
     }
 
-    async initQuaggaScanner() {
+    async initZXingScanner() {
         try {
             const video = document.getElementById('scanner-video');
-            const canvas = document.querySelector('.drawingBuffer');
             
-            // Get camera stream with better constraints
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: { ideal: 'environment' },
-                    width: { ideal: 1920, min: 640 },
-                    height: { ideal: 1080, min: 480 },
-                    frameRate: { ideal: 30, min: 15 }
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             });
             
             video.srcObject = stream;
             await new Promise(resolve => video.onloadedmetadata = resolve);
             
+            this.codeReader = new ZXing.BrowserMultiFormatReader();
+            
             document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
             
-            // Initialize QuaggaJS with improved configuration
-            return new Promise((resolve, reject) => {
-                Quagga.init({
-                    inputStream: {
-                        name: "Live",
-                        type: "LiveStream",
-                        target: document.getElementById('scanner-viewport'),
-                        constraints: {
-                            width: { min: 640, ideal: 1280 },
-                            height: { min: 480, ideal: 720 },
-                            facingMode: "environment"
-                        }
-                    },
-                    locator: {
-                        patchSize: "large",
-                        halfSample: false
-                    },
-                    numOfWorkers: 4,
-                    frequency: 5,
-                    decoder: {
-                        readers: [
-                            "ean_reader",
-                            "ean_8_reader",
-                            "ean_13_reader",
-                            "code_128_reader",
-                            "code_39_reader",
-                            "upc_reader",
-                            "upc_e_reader"
-                        ],
-                        multiple: false
-                    },
-                    locate: true
-                }, (err) => {
-                    if (err) {
-                        console.error('QuaggaJS init error:', err);
-                        reject(err);
-                        return;
-                    }
-                    
-                    console.log('QuaggaJS initialized successfully');
-                    Quagga.start();
-                    
-                    // Set up detection handler
-                    Quagga.onDetected(this.onBarcodeDetected.bind(this));
-                    
-                    // Set up processing handler for debugging
-                    Quagga.onProcessed((result) => {
-                        const drawingCtx = Quagga.canvas.ctx.overlay;
-                        const drawingCanvas = Quagga.canvas.dom.overlay;
-                        
-                        if (result) {
-                            if (result.boxes) {
-                                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                                result.boxes.filter(box => box !== result.box).forEach(box => {
-                                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
-                                });
-                            }
-                            
-                            if (result.box) {
-                                Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
-                            }
-                            
-                            if (result.codeResult && result.codeResult.code) {
-                                Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
-                            }
-                        }
-                    });
-                    
-                    resolve();
-                });
-            });
+            this.startScanning();
             
         } catch (error) {
             console.error('Camera error:', error);
             throw new Error('Camera access denied or not available');
         }
+    }
+    
+    startScanning() {
+        if (!this.scannerActive || !this.codeReader) return;
+        
+        const video = document.getElementById('scanner-video');
+        
+        this.codeReader.decodeFromVideoDevice(null, video, (result, error) => {
+            if (result) {
+                console.log('Barcode detected:', result.text);
+                this.onBarcodeDetected({ codeResult: { code: result.text } });
+            }
+            if (error && !(error instanceof ZXing.NotFoundException)) {
+                console.warn('Scan error:', error);
+            }
+        });
     }
 
     async getBatteryInfo() {
@@ -661,44 +606,30 @@ class TindahanKo {
 
     onBarcodeDetected(result) {
         const now = Date.now();
-        if (now - this.lastScanTime < 1500) return; // Increased debounce
+        if (now - this.lastScanTime < 2000) return;
         
         this.lastScanTime = now;
         const barcode = result.codeResult.code;
         
         console.log('Barcode detected:', barcode);
         
-        // Validate barcode format
         if (!barcode || barcode.length < 8) {
             console.log('Invalid barcode format:', barcode);
             return;
         }
         
-        // Check confidence level - be more lenient
-        if (result.codeResult && result.codeResult.decodedCodes) {
-            const avgConfidence = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0) / result.codeResult.decodedCodes.length;
-            if (avgConfidence > 0.5) {
-                console.log('Low confidence scan, ignoring:', avgConfidence);
-                return;
-            }
-        }
-        
-        // Always check fresh data from products array
         const product = this.findProductByBarcode(barcode);
         
         if (product) {
             console.log('Product found:', product.name);
-            // Product exists - handle based on scan mode
             if (this.scanMode === 'inventory') {
                 this.closeBarcodeScanner();
                 this.showToast(`${product.name} - Nasa inventory na!`, 'warning');
             } else {
-                // POS mode - add to cart
                 this.processScanResult(product, barcode);
             }
         } else {
             console.log('Product not found for barcode:', barcode);
-            // Product doesn't exist
             this.handleNewProduct(barcode);
         }
     }
@@ -782,16 +713,14 @@ class TindahanKo {
         this.scannerActive = false;
         
         try {
-            if (typeof Quagga !== 'undefined' && Quagga.stop) {
-                Quagga.stop();
-                Quagga.offDetected();
-                Quagga.offProcessed();
+            if (this.codeReader) {
+                this.codeReader.reset();
+                this.codeReader = null;
             }
         } catch (e) {
-            console.warn('Quagga stop error:', e);
+            console.warn('Scanner stop error:', e);
         }
         
-        // Stop camera stream
         const video = document.getElementById('scanner-video');
         if (video && video.srcObject) {
             const tracks = video.srcObject.getTracks();
@@ -800,8 +729,6 @@ class TindahanKo {
         }
         
         document.getElementById('barcode-modal').classList.add('hidden');
-        
-        // Reset counters
         document.getElementById('fps-counter').textContent = '0';
         document.getElementById('scan-counter').textContent = '0';
     }
