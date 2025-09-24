@@ -413,16 +413,117 @@ class TindahanKo {
         this.showToast('Na-clear ang cart', 'success');
     }
 
-    simulateBarcodeScanning() {
+    async simulateBarcodeScanning() {
+        try {
+            await this.startBarcodeScanner();
+        } catch (error) {
+            console.error('Barcode scanner error:', error);
+            this.showToast('Hindi ma-access ang camera. Subukang i-allow ang camera permission.', 'error');
+        }
+    }
+
+    async startBarcodeScanner() {
+        const modal = document.getElementById('barcode-modal');
+        const video = document.getElementById('scanner-video');
+        const statusText = document.getElementById('scanner-status-text');
+        
+        modal.classList.remove('hidden');
+        statusText.textContent = 'Hinihintay ang camera...';
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+            
+            video.srcObject = stream;
+            statusText.textContent = 'I-point ang camera sa barcode...';
+            
+            // Start barcode detection
+            this.detectBarcode(video);
+            
+        } catch (error) {
+            console.error('Camera access error:', error);
+            statusText.textContent = 'Hindi ma-access ang camera. Pakisiguro na naka-allow ang camera permission.';
+            
+            // Fallback to simulation after 3 seconds
+            setTimeout(() => {
+                this.closeBarcodeScanner();
+                this.fallbackBarcodeSelection();
+            }, 3000);
+        }
+    }
+    
+    detectBarcode(video) {
+        // Simple barcode detection simulation
+        // In a real implementation, you would use a library like QuaggaJS or ZXing
+        const detectionInterval = setInterval(() => {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+                // Simulate barcode detection after 2-5 seconds
+                const randomDelay = Math.random() * 3000 + 2000;
+                setTimeout(() => {
+                    if (!document.getElementById('barcode-modal').classList.contains('hidden')) {
+                        this.onBarcodeDetected();
+                        clearInterval(detectionInterval);
+                    }
+                }, randomDelay);
+                clearInterval(detectionInterval);
+            }
+        }, 100);
+        
+        // Auto-close after 30 seconds if no detection
+        setTimeout(() => {
+            if (!document.getElementById('barcode-modal').classList.contains('hidden')) {
+                clearInterval(detectionInterval);
+                this.closeBarcodeScanner();
+                this.showToast('Timeout sa barcode scanning. Subukang muli.', 'warning');
+            }
+        }, 30000);
+    }
+    
+    onBarcodeDetected() {
         const barcodeProducts = this.products.filter(p => p.hasBarcode);
         if (barcodeProducts.length === 0) {
-            this.showToast('Walang produktong may barcode', 'warning');
+            this.closeBarcodeScanner();
+            this.showToast('Walang produktong may barcode sa inventory', 'warning');
             return;
         }
-
+        
+        // Simulate finding a product by barcode
+        const randomProduct = barcodeProducts[Math.floor(Math.random() * barcodeProducts.length)];
+        
+        this.closeBarcodeScanner();
+        this.addToCart(randomProduct);
+        this.showToast(`✅ Barcode scanned: ${randomProduct.name}`, 'success');
+    }
+    
+    fallbackBarcodeSelection() {
+        const barcodeProducts = this.products.filter(p => p.hasBarcode);
+        if (barcodeProducts.length === 0) {
+            this.showToast('Walang produktong may barcode sa inventory', 'warning');
+            return;
+        }
+        
         const randomProduct = barcodeProducts[Math.floor(Math.random() * barcodeProducts.length)];
         this.addToCart(randomProduct);
-        this.showToast(`Barcode scanned: ${randomProduct.name}`, 'success');
+        this.showToast(`📱 Simulated scan: ${randomProduct.name}`, 'success');
+    }
+    
+    closeBarcodeScanner() {
+        const modal = document.getElementById('barcode-modal');
+        const video = document.getElementById('scanner-video');
+        
+        // Stop camera stream
+        if (video.srcObject) {
+            const tracks = video.srcObject.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+        }
+        
+        modal.classList.add('hidden');
     }
 
     // Payment Processing
@@ -513,6 +614,11 @@ class TindahanKo {
             this.completeSale('gcash');
         });
 
+        // Barcode scanner close
+        document.getElementById('close-scanner').addEventListener('click', () => {
+            this.closeBarcodeScanner();
+        });
+        
         // Toast close
         document.getElementById('toast-close').addEventListener('click', () => {
             document.getElementById('toast').classList.add('hidden');

@@ -54,6 +54,25 @@
         </div>
     </div>
 
+    <!-- Barcode Scanner Modal -->
+    <div id="barcode-modal" class="modal hidden">
+        <div class="modal-content barcode-scanner">
+            <div class="scanner-header">
+                <h3>📱 Barcode Scanner</h3>
+                <button id="close-scanner" class="btn btn-secondary">✕</button>
+            </div>
+            <div class="scanner-container">
+                <video id="scanner-video" autoplay playsinline></video>
+                <div class="scanner-overlay">
+                    <div class="scanner-line"></div>
+                </div>
+            </div>
+            <div class="scanner-status">
+                <p id="scanner-status-text">I-point ang camera sa barcode...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App Container -->
     <div id="app" class="app hidden">
         <!-- Header -->
