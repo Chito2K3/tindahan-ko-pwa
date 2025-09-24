@@ -34,13 +34,8 @@ class TindahanKo {
         this.loadData();
         this.setupEventListeners();
         this.setupPWAInstall();
-        this.checkFirstTimeSetup();
+        this.showLandingPage();
         this.loadSampleData();
-        
-        // Hide loading screen after 2 seconds
-        setTimeout(() => {
-            this.hideLoadingScreen();
-        }, 2000);
     }
 
     // Data Management
@@ -192,11 +187,6 @@ class TindahanKo {
         this.showApp();
         this.updateStoreDisplay();
         this.showToast('Setup complete! Maligayang pagdating! 🎉', 'success');
-        
-        // Show install prompt after setup
-        setTimeout(() => {
-            this.showInstallPrompt();
-        }, 2000);
     }
 
     hideLoadingScreen() {
@@ -1386,8 +1376,8 @@ class TindahanKo {
             this.changeTheme(e.target.value);
         });
 
-        document.getElementById('install-app').addEventListener('click', () => {
-            this.installPWA();
+        document.getElementById('landing-install-btn').addEventListener('click', () => {
+            this.installFromLanding();
         });
 
         document.getElementById('install-prompt-yes').addEventListener('click', () => {
@@ -1581,6 +1571,29 @@ class TindahanKo {
 
     dismissInstallPrompt() {
         document.getElementById('install-prompt-modal').classList.add('hidden');
+    }
+
+    showLandingPage() {
+        if (!localStorage.getItem('tindahan_setup_complete')) {
+            document.getElementById('landing-page').classList.remove('hidden');
+        } else {
+            this.hideLandingPage();
+            this.showApp();
+        }
+    }
+
+    hideLandingPage() {
+        document.getElementById('landing-page').classList.add('hidden');
+    }
+
+    installFromLanding() {
+        if (this.deferredPrompt) {
+            this.installPWA();
+        } else {
+            // If no install prompt, proceed to setup
+            this.hideLandingPage();
+            this.checkFirstTimeSetup();
+        }
     }
 }
 

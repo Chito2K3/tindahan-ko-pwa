@@ -24,8 +24,23 @@
     <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-page">
+        <div class="landing-content">
+            <div class="app-logo">
+                <h1 class="brand-title">Tindahan Ko</h1>
+                <p class="brand-tagline">Para sa mga Reyna ng Tahanan 👑</p>
+            </div>
+            <button class="btn btn-primary btn-install" id="landing-install-btn">
+                Install App 📱
+            </button>
+            <p class="install-description">I-install para sa mas mabilis na access at offline use!</p>
+        </div>
+        <div class="floating-hearts"></div>
+    </div>
+
     <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
+    <div id="loading-screen" class="loading-screen hidden">
         <div class="loading-content">
             <h1 class="loading-title">Tindahan Ko</h1>
             <p class="loading-subtitle">Para sa mga Reyna ng Tahanan 👑</p>
@@ -311,14 +326,6 @@
                                 <option value="purple">Purple Queen 💜</option>
                                 <option value="blue">Blue Belle 💙</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>📱 App Installation</h3>
-                        <div class="setting-item">
-                            <button class="btn btn-primary" id="install-app">Install App 📲</button>
-                            <p class="setting-desc">I-install ang app sa inyong device para sa mas mabilis na access</p>
                         </div>
                     </div>
 
