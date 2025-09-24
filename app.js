@@ -192,6 +192,11 @@ class TindahanKo {
         this.showApp();
         this.updateStoreDisplay();
         this.showToast('Setup complete! Maligayang pagdating! 🎉', 'success');
+        
+        // Show install prompt after setup
+        setTimeout(() => {
+            this.showInstallPrompt();
+        }, 2000);
     }
 
     hideLoadingScreen() {
@@ -1384,6 +1389,14 @@ class TindahanKo {
         document.getElementById('install-app').addEventListener('click', () => {
             this.installPWA();
         });
+
+        document.getElementById('install-prompt-yes').addEventListener('click', () => {
+            this.installPWA();
+        });
+
+        document.getElementById('install-prompt-no').addEventListener('click', () => {
+            this.dismissInstallPrompt();
+        });
     }
 
     loadSettings() {
@@ -1535,22 +1548,39 @@ class TindahanKo {
         }
     }
 
-    async installPWA() {
-        if (!this.deferredPrompt) {
-            this.showToast('App is already installed or not available for install', 'warning');
-            return;
+    showInstallPrompt() {
+        if (this.deferredPrompt || this.isInstallable()) {
+            document.getElementById('install-prompt-modal').classList.remove('hidden');
         }
+    }
 
-        this.deferredPrompt.prompt();
-        const { outcome } = await this.deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-            this.showToast('Installing app... 📲', 'success');
+    isInstallable() {
+        return !window.matchMedia('(display-mode: standalone)').matches && 
+               'serviceWorker' in navigator;
+    }
+
+    async installPWA() {
+        if (this.deferredPrompt) {
+            this.deferredPrompt.prompt();
+            const { outcome } = await this.deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                this.showToast('Installing app... 📲', 'success');
+            } else {
+                this.showToast('Installation cancelled', 'warning');
+            }
+            
+            this.deferredPrompt = null;
+            document.getElementById('install-prompt-modal').classList.add('hidden');
+        } else if (this.isInstallable()) {
+            this.showToast('Please use your browser\'s "Add to Home Screen" option', 'info');
         } else {
-            this.showToast('Installation cancelled', 'warning');
+            this.showToast('App is already installed or not available', 'warning');
         }
-        
-        this.deferredPrompt = null;
+    }
+
+    dismissInstallPrompt() {
+        document.getElementById('install-prompt-modal').classList.add('hidden');
     }
 }
 
