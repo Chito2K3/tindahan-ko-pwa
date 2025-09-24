@@ -159,18 +159,13 @@
                     <button class="category-btn" data-category="personal">👤 Personal</button>
                 </div>
 
-                <!-- Product Grid -->
-                <div class="product-grid" id="product-grid">
-                    <!-- Products will be dynamically loaded here -->
-                </div>
-
                 <!-- Shopping Cart -->
                 <div class="cart-section">
                     <h3>🛒 Cart</h3>
                     <div class="cart-items" id="cart-items">
                         <div class="empty-cart">
                             <p>Walang laman ang cart 🛒</p>
-                            <p>Pumili ng produkto sa kaliwa</p>
+                            <p>Scan o hanapin ang produkto sa taas</p>
                         </div>
                     </div>
                     
@@ -184,9 +179,9 @@
                             <span id="cart-total">₱0.00</span>
                         </div>
                     </div>
-                    
-                    <button class="btn btn-primary" id="process-payment" disabled>Bayad 💳</button>
                 </div>
+                
+                <button class="btn btn-primary" id="process-payment" disabled>Bayad 💳</button>
             </div>
 
             <!-- Tindahan (Inventory) Page -->
@@ -485,19 +480,5 @@
 
     <!-- Scripts -->
     <script src="app.js"></script>
-    <script>
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then((registration) => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch((registrationError) => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
-        }
-    </script>
 </body>
 </html>

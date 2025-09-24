@@ -200,7 +200,6 @@ class TindahanKo {
         document.getElementById('app').classList.remove('hidden');
         this.updateStoreDisplay();
         this.switchPage('benta');
-        this.renderProducts();
         this.updateInventoryStats();
     }
 
@@ -230,7 +229,6 @@ class TindahanKo {
         // Load page-specific data
         switch (pageName) {
             case 'benta':
-                this.renderProducts();
                 this.updateCart();
                 break;
             case 'tindahan':
@@ -279,48 +277,26 @@ class TindahanKo {
     }
 
     renderProducts(filteredProducts = null) {
-        const grid = document.getElementById('product-grid');
-        const productsToShow = filteredProducts || this.products;
-
-        grid.innerHTML = '';
-
-        if (productsToShow.length === 0) {
-            grid.innerHTML = '<div class="empty-state">Walang produkto na nakita 📦</div>';
-            return;
-        }
-
-        productsToShow.forEach(product => {
-            const productEl = document.createElement('div');
-            productEl.className = 'product-item';
-            productEl.innerHTML = `
-                <div class="product-emoji">${product.emoji}</div>
-                <div class="product-name">${product.name}</div>
-                <div class="product-price">₱${product.price.toFixed(2)}</div>
-                <div class="product-stock">Stock: ${product.stock}</div>
-            `;
-            
-            productEl.addEventListener('click', () => {
-                this.addToCart(product);
-            });
-            
-            grid.appendChild(productEl);
-        });
+        // No product grid in new layout - products are added via search/scan only
+        return;
     }
 
     filterProducts(searchTerm) {
         const filtered = this.products.filter(product =>
             product.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        this.renderProducts(filtered);
+        
+        if (filtered.length === 1) {
+            this.addToCart(filtered[0]);
+            document.getElementById('product-search').value = '';
+        } else if (filtered.length === 0) {
+            this.showToast('Walang nahanap na produkto', 'warning');
+        }
     }
 
     filterProductsByCategory(category) {
-        if (category === 'all') {
-            this.renderProducts();
-        } else {
-            const filtered = this.products.filter(product => product.category === category);
-            this.renderProducts(filtered);
-        }
+        // Categories are now just visual indicators
+        return;
     }
 
     addToCart(product) {
@@ -949,7 +925,6 @@ class TindahanKo {
         document.getElementById('payment-modal').classList.add('hidden');
         
         this.showToast('Benta successful! 🎉', 'success');
-        this.renderProducts(); // Refresh to show updated stock
     }
 
     calculateProfit(cartItems) {
@@ -1169,7 +1144,6 @@ class TindahanKo {
         this.saveData();
         this.renderInventory();
         this.updateInventoryStats();
-        this.renderProducts(); // Refresh POS products too
         document.getElementById('product-modal').classList.add('hidden');
     }
 
@@ -1443,6 +1417,19 @@ class TindahanKo {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new TindahanKo();
 });
+
+// Service Worker Registration (only for HTTPS/localhost)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
+}
 
 // Global functions for inline event handlers
 window.updateCartQuantity = (index, change) => app.updateCartQuantity(index, change);
