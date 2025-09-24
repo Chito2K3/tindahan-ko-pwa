@@ -16,9 +16,9 @@
   --glass-border: rgba(255, 255, 255, 0.18);
   --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   --shadow-card: 0 4px 15px 0 rgba(255, 105, 180, 0.2);
-  --text-primary: #f7fafc;
-  --text-secondary: #e2e8f0;
-  --text-light: #cbd5e0;
+  --text-primary: #ffffff;
+  --text-secondary: #f7fafc;
+  --text-light: #e2e8f0;
   --success: #48bb78;
   --warning: #ed8936;
   --danger: #f56565;
@@ -467,6 +467,7 @@ textarea {
 
 .search-item-name {
   font-weight: 500;
+  color: var(--white);
 }
 
 .search-item-price {
@@ -538,7 +539,8 @@ textarea {
   font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
-  color: var(--text-primary);
+  color: var(--white);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .product-price {
@@ -611,8 +613,9 @@ textarea {
 
 .cart-item-name {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--white);
   font-size: 0.9rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .cart-item-price {
@@ -758,8 +761,9 @@ textarea {
 
 .inventory-details h4 {
   margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
+  color: var(--white);
   font-size: 1rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .inventory-meta {
@@ -856,6 +860,7 @@ textarea {
   align-items: center;
   gap: 0.5rem;
   color: var(--white);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .top-product-rank {
@@ -893,8 +898,9 @@ textarea {
 
 .settings-section h3 {
   margin-bottom: 1.5rem;
-  color: var(--text-primary);
+  color: var(--white);
   font-size: 1.3rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .setting-item {

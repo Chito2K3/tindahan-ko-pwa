@@ -46,6 +46,7 @@ class TindahanKo {
             this.sales = JSON.parse(localStorage.getItem('tindahan_sales') || '[]');
             this.storeInfo = JSON.parse(localStorage.getItem('tindahan_store') || '{}');
             this.isFirstTime = !localStorage.getItem('tindahan_setup_complete');
+            this.currentTheme = localStorage.getItem('tindahan_theme') || 'pink';
         } catch (error) {
             console.error('Error loading data from localStorage:', error);
             this.showToast('May problema sa pag-load ng data. Subukang i-refresh ang page.', 'error');
@@ -57,6 +58,7 @@ class TindahanKo {
             localStorage.setItem('tindahan_products', JSON.stringify(this.products));
             localStorage.setItem('tindahan_sales', JSON.stringify(this.sales));
             localStorage.setItem('tindahan_store', JSON.stringify(this.storeInfo));
+            localStorage.setItem('tindahan_theme', this.currentTheme);
         } catch (error) {
             console.error('Error saving data to localStorage:', error);
             this.showToast('May problema sa pag-save ng data. Baka puno na ang storage.', 'error');
@@ -199,6 +201,7 @@ class TindahanKo {
     showApp() {
         document.getElementById('app').classList.remove('hidden');
         this.updateStoreDisplay();
+        this.applyTheme(this.currentTheme);
         this.switchPage('benta');
         this.updateInventoryStats();
     }
@@ -1379,6 +1382,7 @@ class TindahanKo {
         document.getElementById('settings-store-name').value = this.storeInfo.name || '';
         document.getElementById('settings-owner-name').value = this.storeInfo.owner || '';
         document.getElementById('settings-store-address').value = this.storeInfo.address || '';
+        document.getElementById('theme-selector').value = this.currentTheme;
     }
 
     saveStoreInfo() {
@@ -1457,24 +1461,40 @@ class TindahanKo {
     }
 
     changeTheme(theme) {
-        // Simple theme switching
+        this.currentTheme = theme;
+        this.applyTheme(theme);
+        this.saveData();
+        this.showToast('Theme changed! 🎨', 'success');
+    }
+
+    applyTheme(theme) {
         const root = document.documentElement;
         
         switch (theme) {
             case 'purple':
                 root.style.setProperty('--primary-pink', '#9f7aea');
                 root.style.setProperty('--secondary-pink', '#d6bcfa');
+                root.style.setProperty('--light-pink', '#f7fafc');
+                root.style.setProperty('--dark-pink', '#805ad5');
+                root.style.setProperty('--gradient-primary', 'linear-gradient(135deg, #9f7aea, #805ad5, #6b46c1)');
+                root.style.setProperty('--gradient-secondary', 'linear-gradient(135deg, #d6bcfa, #9f7aea)');
                 break;
             case 'blue':
                 root.style.setProperty('--primary-pink', '#4299e1');
                 root.style.setProperty('--secondary-pink', '#90cdf4');
+                root.style.setProperty('--light-pink', '#ebf8ff');
+                root.style.setProperty('--dark-pink', '#3182ce');
+                root.style.setProperty('--gradient-primary', 'linear-gradient(135deg, #4299e1, #3182ce, #2c5282)');
+                root.style.setProperty('--gradient-secondary', 'linear-gradient(135deg, #90cdf4, #4299e1)');
                 break;
             default: // pink
                 root.style.setProperty('--primary-pink', '#ff69b4');
                 root.style.setProperty('--secondary-pink', '#ffb6c1');
+                root.style.setProperty('--light-pink', '#ffeef8');
+                root.style.setProperty('--dark-pink', '#e91e63');
+                root.style.setProperty('--gradient-primary', 'linear-gradient(135deg, #ff69b4, #ff1493, #dc143c)');
+                root.style.setProperty('--gradient-secondary', 'linear-gradient(135deg, #ffb6c1, #ff69b4)');
         }
-        
-        this.showToast('Theme changed! 🎨', 'success');
     }
 }
 
