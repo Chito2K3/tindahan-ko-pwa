@@ -569,21 +569,41 @@ class TindahanKo {
         try {
             const video = document.getElementById('scanner-video');
             
-            const stream = await navigator.mediaDevices.getUserMedia({
+            // Optimized camera constraints for faster detection
+            const constraints = {
                 video: {
                     facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    width: { ideal: 1920, min: 640 },
+                    height: { ideal: 1080, min: 480 },
+                    frameRate: { ideal: 30, min: 15 },
+                    focusMode: 'continuous',
+                    exposureMode: 'continuous',
+                    whiteBalanceMode: 'continuous'
                 }
-            });
+            };
             
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             await new Promise(resolve => video.onloadedmetadata = resolve);
             
+            // Enhanced ZXing configuration
             this.codeReader = new ZXing.BrowserMultiFormatReader();
             
-            document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
+            // Configure hints for better performance
+            const hints = new Map();
+            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                ZXing.BarcodeFormat.EAN_13,
+                ZXing.BarcodeFormat.EAN_8,
+                ZXing.BarcodeFormat.UPC_A,
+                ZXing.BarcodeFormat.UPC_E,
+                ZXing.BarcodeFormat.CODE_128,
+                ZXing.BarcodeFormat.CODE_39
+            ]);
             
+            this.codeReader.hints = hints;
+            
+            document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
             this.startScanning();
             
         } catch (error) {
@@ -596,16 +616,29 @@ class TindahanKo {
         if (!this.scannerActive || !this.codeReader) return;
         
         const video = document.getElementById('scanner-video');
+        let scanAttempts = 0;
         
+        // Debounced scanning with optimized timing
         this.codeReader.decodeFromVideoDevice(null, video, (result, error) => {
+            scanAttempts++;
+            
             if (result) {
                 console.log('Barcode detected:', result.text);
                 this.onBarcodeDetected({ codeResult: { code: result.text } });
+                return;
             }
+            
+            // Enhanced error handling for better UX
             if (error && !(error instanceof ZXing.NotFoundException)) {
-                console.warn('Scan error:', error);
+                if (scanAttempts > 100) { // Reset after many attempts
+                    this.showScanError('Subukang i-adjust ang lighting o distance...');
+                    scanAttempts = 0;
+                }
             }
         });
+        
+        // Add flashlight toggle if supported
+        this.setupFlashlight(video);
     }
 
     async getBatteryInfo() {
@@ -619,6 +652,7 @@ class TindahanKo {
     startPerformanceMonitoring() {
         let frameCount = 0;
         let lastTime = performance.now();
+        let lowFpsCount = 0;
         
         const updateFPS = () => {
             if (!this.scannerActive) return;
@@ -630,13 +664,37 @@ class TindahanKo {
                 this.fpsCounter = Math.round(frameCount * 1000 / (currentTime - lastTime));
                 document.getElementById('fps-counter').textContent = this.fpsCounter;
                 
-                // Update FPS indicator color
+                // Update FPS indicator color and provide feedback
                 const fpsEl = document.getElementById('fps-counter');
-                fpsEl.className = this.fpsCounter >= 25 ? 'fps-high' : 
-                                 this.fpsCounter >= 15 ? 'fps-medium' : 'fps-low';
+                const qualityEl = document.getElementById('quality-indicator');
+                
+                if (this.fpsCounter >= 25) {
+                    fpsEl.className = 'fps-high';
+                    qualityEl.textContent = 'HD';
+                    lowFpsCount = 0;
+                } else if (this.fpsCounter >= 15) {
+                    fpsEl.className = 'fps-medium';
+                    qualityEl.textContent = 'Good';
+                    lowFpsCount = 0;
+                } else {
+                    fpsEl.className = 'fps-low';
+                    qualityEl.textContent = 'Low';
+                    lowFpsCount++;
+                    
+                    // Suggest improvements after consistent low FPS
+                    if (lowFpsCount >= 3) {
+                        this.showScanError('Low performance detected. Try better lighting or close other apps.');
+                        lowFpsCount = 0;
+                    }
+                }
                 
                 frameCount = 0;
                 lastTime = currentTime;
+                
+                // Auto-cleanup cache periodically
+                if (Math.random() < 0.1) {
+                    this.cleanupCache();
+                }
             }
             
             requestAnimationFrame(updateFPS);
@@ -647,16 +705,35 @@ class TindahanKo {
 
     onBarcodeDetected(result) {
         const now = Date.now();
-        if (now - this.lastScanTime < 2000) return;
-        
-        this.lastScanTime = now;
         const barcode = result.codeResult.code;
+        
+        // Enhanced debounce with barcode-specific caching
+        const cacheKey = `${barcode}_${this.scanMode}`;
+        if (this.scanCache.has(cacheKey) && now - this.scanCache.get(cacheKey) < 1500) {
+            return; // Prevent duplicate scans
+        }
+        
+        this.scanCache.set(cacheKey, now);
+        this.lastScanTime = now;
         
         console.log('Barcode detected:', barcode);
         
-        if (!barcode || barcode.length < 8) {
-            console.log('Invalid barcode format:', barcode);
+        // Enhanced barcode validation for common formats
+        if (!barcode || barcode.length < 6) {
+            this.showScanError('Barcode too short');
             return;
+        }
+        
+        // Allow common barcode characters
+        if (!/^[0-9A-Za-z\-\.\s]+$/.test(barcode)) {
+            this.showScanError('Invalid barcode characters');
+            return;
+        }
+        
+        // Validate common barcode lengths
+        const validLengths = [8, 12, 13, 14]; // EAN-8, UPC-A, EAN-13, ITF-14
+        if (!/^[0-9]+$/.test(barcode) && !validLengths.includes(barcode.length)) {
+            console.warn('Unusual barcode length:', barcode.length);
         }
         
         const product = this.findProductByBarcode(barcode);
@@ -689,8 +766,26 @@ class TindahanKo {
     }
 
     findProductByBarcode(barcode) {
-        // Find exact barcode match
-        return this.products.find(p => p.barcode === barcode);
+        // Enhanced barcode matching with normalization
+        const normalizedBarcode = barcode.trim().replace(/^0+/, ''); // Remove leading zeros
+        
+        return this.products.find(p => {
+            if (!p.barcode) return false;
+            
+            const productBarcode = p.barcode.trim();
+            
+            // Exact match
+            if (productBarcode === barcode) return true;
+            
+            // Match without leading zeros
+            if (productBarcode.replace(/^0+/, '') === normalizedBarcode) return true;
+            
+            // UPC-A to EAN-13 conversion (add leading zero)
+            if (barcode.length === 12 && productBarcode === '0' + barcode) return true;
+            if (productBarcode.length === 12 && barcode === '0' + productBarcode) return true;
+            
+            return false;
+        });
     }
 
     processScanResult(product, barcode) {
@@ -724,9 +819,44 @@ class TindahanKo {
     }
 
     cleanupCache() {
+        const now = Date.now();
+        // Remove entries older than 5 minutes
+        for (const [key, timestamp] of this.scanCache.entries()) {
+            if (now - timestamp > 300000) {
+                this.scanCache.delete(key);
+            }
+        }
+        
+        // Fallback size limit
         if (this.scanCache.size > 100) {
             const entries = Array.from(this.scanCache.entries());
             entries.slice(0, 50).forEach(([key]) => this.scanCache.delete(key));
+        }
+    }
+    
+    // Add flashlight support
+    async setupFlashlight(video) {
+        try {
+            const track = video.srcObject.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            
+            if (capabilities.torch) {
+                const flashBtn = document.createElement('button');
+                flashBtn.className = 'btn btn-small';
+                flashBtn.innerHTML = '🔦';
+                flashBtn.id = 'toggle-flash';
+                
+                document.querySelector('.scanner-controls').appendChild(flashBtn);
+                
+                let flashOn = false;
+                flashBtn.addEventListener('click', async () => {
+                    flashOn = !flashOn;
+                    await track.applyConstraints({ advanced: [{ torch: flashOn }] });
+                    flashBtn.innerHTML = flashOn ? '🔆' : '🔦';
+                });
+            }
+        } catch (error) {
+            console.log('Flashlight not supported:', error);
         }
     }
 
@@ -779,6 +909,34 @@ class TindahanKo {
         const btn = document.getElementById('toggle-sound');
         btn.textContent = this.audioEnabled ? '🔊' : '🔇';
         this.showToast(this.audioEnabled ? 'Sound enabled' : 'Sound disabled', 'success');
+    }
+    
+    async triggerFocusAssist() {
+        try {
+            const video = document.getElementById('scanner-video');
+            const track = video.srcObject.getVideoTracks()[0];
+            
+            // Trigger autofocus
+            await track.applyConstraints({
+                focusMode: 'single-shot'
+            });
+            
+            // Visual feedback
+            const guide = document.querySelector('.scanner-guide');
+            const originalText = guide.textContent;
+            guide.textContent = 'Focusing...';
+            guide.style.background = 'var(--warning)';
+            
+            setTimeout(() => {
+                guide.textContent = originalText;
+                guide.style.background = 'rgba(0, 0, 0, 0.7)';
+            }, 1000);
+            
+            this.showToast('Focus assist triggered', 'success');
+        } catch (error) {
+            console.log('Focus assist not supported:', error);
+            this.showToast('Focus assist not available', 'warning');
+        }
     }
     
     processManualBarcode() {
@@ -901,6 +1059,10 @@ class TindahanKo {
         
         document.getElementById('toggle-sound').addEventListener('click', () => {
             this.toggleScannerSound();
+        });
+        
+        document.getElementById('focus-assist').addEventListener('click', () => {
+            this.triggerFocusAssist();
         });
         
         document.getElementById('manual-submit').addEventListener('click', () => {

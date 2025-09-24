@@ -1269,9 +1269,61 @@ textarea {
   position: absolute;
   width: 60%;
   height: 40%;
-  border: 3px solid var(--primary-pink);
+  border: 2px solid transparent;
   border-radius: 10px;
-  box-shadow: 0 0 20px rgba(255, 105, 180, 0.5);
+  box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+}
+
+.corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--primary-pink);
+}
+
+.corner.top-left {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 10px;
+}
+
+.corner.top-right {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 10px;
+}
+
+.corner.bottom-left {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 10px;
+}
+
+.corner.bottom-right {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 10px;
+}
+
+.scanner-guide {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  white-space: nowrap;
 }
 
 .scanner-line {
@@ -1341,16 +1393,26 @@ textarea {
   animation-duration: 1.5s;
 }
 
-.scanner-success .scanner-frame {
+.scanner-success .corner {
   border-color: var(--success);
-  box-shadow: 0 0 20px rgba(72, 187, 120, 0.8);
+  box-shadow: 0 0 10px rgba(72, 187, 120, 0.8);
   animation: successPulse 0.5s ease-out;
 }
 
-.scanner-error .scanner-frame {
+.scanner-error .corner {
   border-color: var(--danger);
-  box-shadow: 0 0 20px rgba(245, 101, 101, 0.8);
+  box-shadow: 0 0 10px rgba(245, 101, 101, 0.8);
   animation: errorShake 0.5s ease-out;
+}
+
+.scanner-success .scanner-guide {
+  background: var(--success);
+  color: white;
+}
+
+.scanner-error .scanner-guide {
+  background: var(--danger);
+  color: white;
 }
 
 @keyframes successPulse {

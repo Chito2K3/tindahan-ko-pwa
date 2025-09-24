@@ -79,6 +79,7 @@
                 <h3>📱 Professional Scanner</h3>
                 <div class="scanner-controls">
                     <button id="toggle-sound" class="btn btn-small">🔊</button>
+                    <button id="focus-assist" class="btn btn-small" title="Focus Assist">🎯</button>
                     <button id="close-scanner" class="btn btn-secondary">✕</button>
                 </div>
             </div>
@@ -88,8 +89,14 @@
                     <canvas class="drawingBuffer" style="position: absolute; top: 0; left: 0;"></canvas>
                 </div>
                 <div class="scanner-overlay">
-                    <div class="scanner-frame"></div>
+                    <div class="scanner-frame">
+                        <div class="corner top-left"></div>
+                        <div class="corner top-right"></div>
+                        <div class="corner bottom-left"></div>
+                        <div class="corner bottom-right"></div>
+                    </div>
                     <div class="scanner-line"></div>
+                    <div class="scanner-guide">Align barcode within frame</div>
                 </div>
             </div>
             <div class="scanner-stats">
