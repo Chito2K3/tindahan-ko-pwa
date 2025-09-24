@@ -552,17 +552,17 @@ class TindahanKo {
                         type: "LiveStream",
                         target: document.getElementById('scanner-viewport'),
                         constraints: {
-                            width: { min: 640, ideal: 1920 },
-                            height: { min: 480, ideal: 1080 },
+                            width: { min: 640, ideal: 1280 },
+                            height: { min: 480, ideal: 720 },
                             facingMode: "environment"
                         }
                     },
                     locator: {
-                        patchSize: "medium",
-                        halfSample: true
+                        patchSize: "large",
+                        halfSample: false
                     },
-                    numOfWorkers: 2,
-                    frequency: 10,
+                    numOfWorkers: 4,
+                    frequency: 5,
                     decoder: {
                         readers: [
                             "ean_reader",
@@ -570,26 +570,10 @@ class TindahanKo {
                             "ean_13_reader",
                             "code_128_reader",
                             "code_39_reader",
-                            "code_39_vin_reader",
-                            "codabar_reader",
                             "upc_reader",
-                            "upc_e_reader",
-                            "i2of5_reader"
+                            "upc_e_reader"
                         ],
-                        debug: {
-                            showCanvas: true,
-                            showPatches: false,
-                            showFoundPatches: false,
-                            showSkeleton: false,
-                            showLabels: false,
-                            showPatchLabels: false,
-                            showRemainingPatchLabels: false,
-                            boxFromPatches: {
-                                showTransformed: false,
-                                showTransformedBox: false,
-                                showBB: false
-                            }
-                        }
+                        multiple: false
                     },
                     locate: true
                 }, (err) => {
@@ -690,10 +674,10 @@ class TindahanKo {
             return;
         }
         
-        // Check confidence level
+        // Check confidence level - be more lenient
         if (result.codeResult && result.codeResult.decodedCodes) {
             const avgConfidence = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0) / result.codeResult.decodedCodes.length;
-            if (avgConfidence > 0.3) {
+            if (avgConfidence > 0.5) {
                 console.log('Low confidence scan, ignoring:', avgConfidence);
                 return;
             }
@@ -828,6 +812,28 @@ class TindahanKo {
         btn.textContent = this.audioEnabled ? '🔊' : '🔇';
         this.showToast(this.audioEnabled ? 'Sound enabled' : 'Sound disabled', 'success');
     }
+    
+    processManualBarcode() {
+        const input = document.getElementById('manual-barcode');
+        const barcode = input.value.trim();
+        
+        if (!barcode) {
+            this.showToast('I-type ang barcode', 'warning');
+            return;
+        }
+        
+        console.log('Manual barcode entered:', barcode);
+        
+        const product = this.findProductByBarcode(barcode);
+        
+        if (product) {
+            this.processScanResult(product, barcode);
+        } else {
+            this.handleNewProduct(barcode);
+        }
+        
+        input.value = '';
+    }
 
     // Payment Processing
     openPaymentModal() {
@@ -924,6 +930,16 @@ class TindahanKo {
         
         document.getElementById('toggle-sound').addEventListener('click', () => {
             this.toggleScannerSound();
+        });
+        
+        document.getElementById('manual-submit').addEventListener('click', () => {
+            this.processManualBarcode();
+        });
+        
+        document.getElementById('manual-barcode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.processManualBarcode();
+            }
         });
         
         // Keyboard shortcuts
