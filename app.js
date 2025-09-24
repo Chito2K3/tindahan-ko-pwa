@@ -651,8 +651,15 @@ class TindahanKo {
     handleNewProduct(barcode) {
         this.closeBarcodeScanner();
         
-        if (this.currentPage === 'tindahan') {
-            // In inventory mode - open add product modal with barcode
+        if (this.scanMode === 'inventory') {
+            // In inventory mode - check if barcode already exists
+            const existingProduct = this.products.find(p => p.barcode === barcode);
+            if (existingProduct) {
+                this.showToast(`${existingProduct.name} - Nasa inventory na!`, 'warning');
+                return;
+            }
+            
+            // Open add product modal with barcode
             this.openProductModal(null, barcode);
             this.showToast('Bagong produkto! I-add sa inventory.', 'warning');
         } else {
@@ -1106,6 +1113,16 @@ class TindahanKo {
     saveProduct() {
         const form = document.getElementById('product-form');
         const editId = form.dataset.editId;
+        const barcodeValue = document.getElementById('product-barcode-value').value.trim();
+
+        // Check for duplicate barcode
+        if (barcodeValue && !editId) {
+            const existingProduct = this.products.find(p => p.barcode === barcodeValue);
+            if (existingProduct) {
+                this.showToast(`Barcode ${barcodeValue} ay ginagamit na ng ${existingProduct.name}`, 'error');
+                return;
+            }
+        }
 
         const productData = {
             name: document.getElementById('product-name').value,
@@ -1115,7 +1132,7 @@ class TindahanKo {
             emoji: document.getElementById('product-emoji').value || '📦',
             reorderLevel: parseInt(document.getElementById('product-reorder').value),
             hasBarcode: document.getElementById('product-barcode').checked,
-            barcode: document.getElementById('product-barcode-value').value || ''
+            barcode: barcodeValue
         };
 
         if (editId) {
@@ -1128,12 +1145,19 @@ class TindahanKo {
                 ...productData
             };
             this.products.push(newProduct);
+            
+            // Clear cache for this barcode
+            if (barcodeValue) {
+                this.scanCache.delete(barcodeValue);
+            }
+            
             this.showToast('Product added successfully! ✅', 'success');
         }
 
         this.saveData();
         this.renderInventory();
         this.updateInventoryStats();
+        this.renderProducts(); // Refresh POS products too
         document.getElementById('product-modal').classList.add('hidden');
     }
 
