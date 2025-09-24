@@ -22,6 +22,7 @@ class TindahanKo {
         this.scanCache = new Map();
         this.audioContext = null;
         this.scanMode = 'pos'; // 'pos' or 'inventory'
+        this.cameraStream = null; // Persistent camera stream
         
         // PWA Install
         this.deferredPrompt = null;
@@ -569,39 +570,43 @@ class TindahanKo {
         try {
             const video = document.getElementById('scanner-video');
             
-            // Optimized camera constraints for faster detection
-            const constraints = {
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1920, min: 640 },
-                    height: { ideal: 1080, min: 480 },
-                    frameRate: { ideal: 30, min: 15 },
-                    focusMode: 'continuous',
-                    exposureMode: 'continuous',
-                    whiteBalanceMode: 'continuous'
-                }
-            };
+            // Reuse existing stream or create new one
+            if (!this.cameraStream) {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920, min: 640 },
+                        height: { ideal: 1080, min: 480 },
+                        frameRate: { ideal: 30, min: 15 },
+                        focusMode: 'continuous',
+                        exposureMode: 'continuous',
+                        whiteBalanceMode: 'continuous'
+                    }
+                };
+                
+                this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            }
             
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
+            video.srcObject = this.cameraStream;
             await new Promise(resolve => video.onloadedmetadata = resolve);
             
             // Enhanced ZXing configuration
-            this.codeReader = new ZXing.BrowserMultiFormatReader();
-            
-            // Configure hints for better performance
-            const hints = new Map();
-            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-                ZXing.BarcodeFormat.EAN_13,
-                ZXing.BarcodeFormat.EAN_8,
-                ZXing.BarcodeFormat.UPC_A,
-                ZXing.BarcodeFormat.UPC_E,
-                ZXing.BarcodeFormat.CODE_128,
-                ZXing.BarcodeFormat.CODE_39
-            ]);
-            
-            this.codeReader.hints = hints;
+            if (!this.codeReader) {
+                this.codeReader = new ZXing.BrowserMultiFormatReader();
+                
+                const hints = new Map();
+                hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                    ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,
+                    ZXing.BarcodeFormat.UPC_A,
+                    ZXing.BarcodeFormat.UPC_E,
+                    ZXing.BarcodeFormat.CODE_128,
+                    ZXing.BarcodeFormat.CODE_39
+                ]);
+                
+                this.codeReader.hints = hints;
+            }
             
             document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
             this.startScanning();
@@ -886,18 +891,17 @@ class TindahanKo {
         try {
             if (this.codeReader) {
                 this.codeReader.reset();
-                this.codeReader = null;
             }
         } catch (e) {
             console.warn('Scanner stop error:', e);
         }
         
         const video = document.getElementById('scanner-video');
-        if (video && video.srcObject) {
-            const tracks = video.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
+        if (video) {
             video.srcObject = null;
         }
+        
+        // Keep camera stream alive for next use
         
         document.getElementById('barcode-modal').classList.add('hidden');
         document.getElementById('fps-counter').textContent = '0';
@@ -1084,6 +1088,21 @@ class TindahanKo {
             if (e.key.toLowerCase() === 's' && e.ctrlKey && !this.scannerActive && this.currentPage === 'benta') {
                 e.preventDefault();
                 this.simulateBarcodeScanning();
+            }
+        });
+        
+        // Handle page visibility to manage camera stream
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.cameraStream) {
+                // Pause stream when page is hidden
+                this.cameraStream.getVideoTracks().forEach(track => {
+                    track.enabled = false;
+                });
+            } else if (!document.hidden && this.cameraStream) {
+                // Resume stream when page is visible
+                this.cameraStream.getVideoTracks().forEach(track => {
+                    track.enabled = true;
+                });
             }
         });
         
