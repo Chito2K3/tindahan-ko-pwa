@@ -195,6 +195,7 @@
                     <h2>📦 Tindahan - Inventory</h2>
                     <div class="quick-actions">
                         <button class="btn btn-primary" id="add-product">Dagdag Produkto ➕</button>
+                        <button class="btn btn-secondary" id="scan-inventory">Scan Barcode 📱</button>
                         <button class="btn btn-secondary" id="low-stock-alert">Low Stock 🔔</button>
                     </div>
                 </div>
@@ -417,6 +418,10 @@
                 <div class="form-group">
                     <label for="product-reorder">Reorder Level:</label>
                     <input type="number" id="product-reorder" min="0" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="product-barcode-value">Barcode:</label>
+                    <input type="text" id="product-barcode-value" placeholder="Scan o type ang barcode">
                 </div>
                 <div class="form-group">
                     <label>

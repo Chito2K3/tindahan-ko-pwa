@@ -21,6 +21,7 @@ class TindahanKo {
         this.lastScanTime = 0;
         this.scanCache = new Map();
         this.audioContext = null;
+        this.scanMode = 'pos'; // 'pos' or 'inventory'
         
         this.init();
     }
@@ -73,6 +74,7 @@ class TindahanKo {
                     stock: 50,
                     category: 'snacks',
                     hasBarcode: true,
+                    barcode: '4800016644931',
                     emoji: '🍪',
                     reorderLevel: 10
                 },
@@ -83,6 +85,7 @@ class TindahanKo {
                     stock: 30,
                     category: 'drinks',
                     hasBarcode: true,
+                    barcode: '4902430735063',
                     emoji: '🥤',
                     reorderLevel: 5
                 },
@@ -93,6 +96,7 @@ class TindahanKo {
                     stock: 75,
                     category: 'snacks',
                     hasBarcode: true,
+                    barcode: '4800016001000',
                     emoji: '🍜',
                     reorderLevel: 15
                 },
@@ -103,6 +107,7 @@ class TindahanKo {
                     stock: 20,
                     category: 'household',
                     hasBarcode: false,
+                    barcode: '',
                     emoji: '🧽',
                     reorderLevel: 8
                 },
@@ -113,6 +118,7 @@ class TindahanKo {
                     stock: 15,
                     category: 'personal',
                     hasBarcode: true,
+                    barcode: '8850006330012',
                     emoji: '🦷',
                     reorderLevel: 5
                 }
@@ -267,6 +273,7 @@ class TindahanKo {
 
         // Barcode scan simulation
         document.getElementById('barcode-scan').addEventListener('click', () => {
+            this.scanMode = 'pos';
             this.simulateBarcodeScanning();
         });
     }
@@ -617,8 +624,12 @@ class TindahanKo {
         
         // Check cache first
         if (this.scanCache.has(barcode)) {
-            const product = this.scanCache.get(barcode);
-            this.processScanResult(product, barcode);
+            const cachedResult = this.scanCache.get(barcode);
+            if (cachedResult.product) {
+                this.processScanResult(cachedResult.product, barcode);
+            } else {
+                this.handleNewProduct(barcode);
+            }
             return;
         }
         
@@ -627,18 +638,32 @@ class TindahanKo {
         
         if (product) {
             // Cache the result
-            this.scanCache.set(barcode, product);
+            this.scanCache.set(barcode, { product, barcode });
             this.cleanupCache();
             this.processScanResult(product, barcode);
         } else {
-            this.showScanError('Barcode hindi nahanap sa inventory');
+            // Cache as unknown product
+            this.scanCache.set(barcode, { product: null, barcode });
+            this.handleNewProduct(barcode);
+        }
+    }
+    
+    handleNewProduct(barcode) {
+        this.closeBarcodeScanner();
+        
+        if (this.currentPage === 'tindahan') {
+            // In inventory mode - open add product modal with barcode
+            this.openProductModal(null, barcode);
+            this.showToast('Bagong produkto! I-add sa inventory.', 'warning');
+        } else {
+            // In POS mode - show error
+            this.showToast(`Barcode ${barcode} hindi nahanap sa inventory`, 'error');
         }
     }
 
     findProductByBarcode(barcode) {
-        // Simulate barcode matching - in real app, products would have barcode field
-        const barcodeProducts = this.products.filter(p => p.hasBarcode);
-        return barcodeProducts[Math.floor(Math.random() * barcodeProducts.length)];
+        // Find exact barcode match
+        return this.products.find(p => p.barcode === barcode);
     }
 
     processScanResult(product, barcode) {
@@ -945,6 +970,11 @@ class TindahanKo {
         document.getElementById('add-product').addEventListener('click', () => {
             this.openProductModal();
         });
+        
+        document.getElementById('scan-inventory').addEventListener('click', () => {
+            this.scanMode = 'inventory';
+            this.simulateBarcodeScanning();
+        });
 
         document.getElementById('inventory-search').addEventListener('input', (e) => {
             this.filterInventory(e.target.value);
@@ -1040,7 +1070,7 @@ class TindahanKo {
         }
     }
 
-    openProductModal(productId = null) {
+    openProductModal(productId = null, scannedBarcode = null) {
         const modal = document.getElementById('product-modal');
         const form = document.getElementById('product-form');
         const title = document.getElementById('product-modal-title');
@@ -1058,10 +1088,15 @@ class TindahanKo {
                 document.getElementById('product-emoji').value = product.emoji;
                 document.getElementById('product-reorder').value = product.reorderLevel;
                 document.getElementById('product-barcode').checked = product.hasBarcode;
+                document.getElementById('product-barcode-value').value = product.barcode || '';
                 form.dataset.editId = productId;
             }
         } else {
-            title.textContent = 'Dagdag Produkto';
+            title.textContent = scannedBarcode ? 'Bagong Produkto (Scanned)' : 'Dagdag Produkto';
+            if (scannedBarcode) {
+                document.getElementById('product-barcode-value').value = scannedBarcode;
+                document.getElementById('product-barcode').checked = true;
+            }
             delete form.dataset.editId;
         }
 
@@ -1079,7 +1114,8 @@ class TindahanKo {
             category: document.getElementById('product-category').value,
             emoji: document.getElementById('product-emoji').value || '📦',
             reorderLevel: parseInt(document.getElementById('product-reorder').value),
-            hasBarcode: document.getElementById('product-barcode').checked
+            hasBarcode: document.getElementById('product-barcode').checked,
+            barcode: document.getElementById('product-barcode-value').value || ''
         };
 
         if (editId) {
