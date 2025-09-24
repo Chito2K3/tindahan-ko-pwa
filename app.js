@@ -526,54 +526,114 @@ class TindahanKo {
 
     async initQuaggaScanner() {
         try {
-            // First try direct camera access
             const video = document.getElementById('scanner-video');
+            const canvas = document.querySelector('.drawingBuffer');
+            
+            // Get camera stream with better constraints
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1280, min: 640 },
-                    height: { ideal: 720, min: 480 }
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920, min: 640 },
+                    height: { ideal: 1080, min: 480 },
+                    frameRate: { ideal: 30, min: 15 }
                 }
             });
             
             video.srcObject = stream;
+            await new Promise(resolve => video.onloadedmetadata = resolve);
+            
             document.getElementById('scanner-status-text').textContent = 'I-point ang barcode sa gitna ng frame...';
             
-            // Initialize QuaggaJS with the video stream
+            // Initialize QuaggaJS with improved configuration
             return new Promise((resolve, reject) => {
                 Quagga.init({
                     inputStream: {
                         name: "Live",
                         type: "LiveStream",
-                        target: video,
+                        target: document.getElementById('scanner-viewport'),
                         constraints: {
+                            width: { min: 640, ideal: 1920 },
+                            height: { min: 480, ideal: 1080 },
                             facingMode: "environment"
                         }
                     },
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: true
+                    },
+                    numOfWorkers: 2,
+                    frequency: 10,
                     decoder: {
                         readers: [
                             "ean_reader",
-                            "ean_8_reader", 
+                            "ean_8_reader",
+                            "ean_13_reader",
                             "code_128_reader",
-                            "code_39_reader"
-                        ]
+                            "code_39_reader",
+                            "code_39_vin_reader",
+                            "codabar_reader",
+                            "upc_reader",
+                            "upc_e_reader",
+                            "i2of5_reader"
+                        ],
+                        debug: {
+                            showCanvas: true,
+                            showPatches: false,
+                            showFoundPatches: false,
+                            showSkeleton: false,
+                            showLabels: false,
+                            showPatchLabels: false,
+                            showRemainingPatchLabels: false,
+                            boxFromPatches: {
+                                showTransformed: false,
+                                showTransformedBox: false,
+                                showBB: false
+                            }
+                        }
                     },
                     locate: true
                 }, (err) => {
                     if (err) {
                         console.error('QuaggaJS init error:', err);
-                        // Continue with basic camera without barcode detection
-                        resolve();
+                        reject(err);
                         return;
                     }
                     
+                    console.log('QuaggaJS initialized successfully');
                     Quagga.start();
+                    
+                    // Set up detection handler
                     Quagga.onDetected(this.onBarcodeDetected.bind(this));
+                    
+                    // Set up processing handler for debugging
+                    Quagga.onProcessed((result) => {
+                        const drawingCtx = Quagga.canvas.ctx.overlay;
+                        const drawingCanvas = Quagga.canvas.dom.overlay;
+                        
+                        if (result) {
+                            if (result.boxes) {
+                                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                                result.boxes.filter(box => box !== result.box).forEach(box => {
+                                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                                });
+                            }
+                            
+                            if (result.box) {
+                                Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+                            }
+                            
+                            if (result.codeResult && result.codeResult.code) {
+                                Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+                            }
+                        }
+                    });
+                    
                     resolve();
                 });
             });
             
         } catch (error) {
+            console.error('Camera error:', error);
             throw new Error('Camera access denied or not available');
         }
     }
@@ -617,15 +677,33 @@ class TindahanKo {
 
     onBarcodeDetected(result) {
         const now = Date.now();
-        if (now - this.lastScanTime < 1000) return; // Debounce
+        if (now - this.lastScanTime < 1500) return; // Increased debounce
         
         this.lastScanTime = now;
         const barcode = result.codeResult.code;
+        
+        console.log('Barcode detected:', barcode);
+        
+        // Validate barcode format
+        if (!barcode || barcode.length < 8) {
+            console.log('Invalid barcode format:', barcode);
+            return;
+        }
+        
+        // Check confidence level
+        if (result.codeResult && result.codeResult.decodedCodes) {
+            const avgConfidence = result.codeResult.decodedCodes.reduce((sum, code) => sum + (code.error || 0), 0) / result.codeResult.decodedCodes.length;
+            if (avgConfidence > 0.3) {
+                console.log('Low confidence scan, ignoring:', avgConfidence);
+                return;
+            }
+        }
         
         // Always check fresh data from products array
         const product = this.findProductByBarcode(barcode);
         
         if (product) {
+            console.log('Product found:', product.name);
             // Product exists - handle based on scan mode
             if (this.scanMode === 'inventory') {
                 this.closeBarcodeScanner();
@@ -635,6 +713,7 @@ class TindahanKo {
                 this.processScanResult(product, barcode);
             }
         } else {
+            console.log('Product not found for barcode:', barcode);
             // Product doesn't exist
             this.handleNewProduct(barcode);
         }
@@ -696,27 +775,34 @@ class TindahanKo {
     }
 
     fallbackScannerMode() {
-        const barcodeProducts = this.products.filter(p => p.hasBarcode);
+        const barcodeProducts = this.products.filter(p => p.hasBarcode && p.barcode);
         if (barcodeProducts.length === 0) {
             this.closeBarcodeScanner();
             this.showToast('Walang produktong may barcode sa inventory', 'warning');
             return;
         }
         
-        // Simulate scan after 2-4 seconds
+        document.getElementById('scanner-status-text').textContent = 'Simulation mode - Pipili ng random product...';
+        
+        // Simulate scan after 2-3 seconds
         setTimeout(() => {
             if (this.scannerActive) {
                 const product = barcodeProducts[Math.floor(Math.random() * barcodeProducts.length)];
-                this.processScanResult(product, 'SIMULATED');
+                console.log('Simulating scan for:', product.name, product.barcode);
+                this.processScanResult(product, product.barcode);
             }
-        }, 2000 + Math.random() * 2000);
+        }, 2000 + Math.random() * 1000);
     }
 
     closeBarcodeScanner() {
         this.scannerActive = false;
         
         try {
-            Quagga.stop();
+            if (typeof Quagga !== 'undefined' && Quagga.stop) {
+                Quagga.stop();
+                Quagga.offDetected();
+                Quagga.offProcessed();
+            }
         } catch (e) {
             console.warn('Quagga stop error:', e);
         }
