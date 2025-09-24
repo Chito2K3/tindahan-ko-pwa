@@ -37,6 +37,34 @@ class TindahanKo {
         this.setupPWAInstall();
         this.showLandingPage();
         this.loadSampleData();
+        this.initCameraOnFirstInteraction();
+    }
+    
+    // Initialize camera on first user interaction
+    initCameraOnFirstInteraction() {
+        const initCamera = async () => {
+            try {
+                if (!this.cameraStream) {
+                    const constraints = {
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1920, min: 640 },
+                            height: { ideal: 1080, min: 480 },
+                            frameRate: { ideal: 30, min: 15 }
+                        }
+                    };
+                    this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('Camera initialized successfully');
+                }
+            } catch (error) {
+                console.log('Camera will be requested when needed:', error);
+            }
+            document.removeEventListener('click', initCamera);
+            document.removeEventListener('touchstart', initCamera);
+        };
+        
+        document.addEventListener('click', initCamera, { once: true });
+        document.addEventListener('touchstart', initCamera, { once: true });
     }
 
     // Data Management
@@ -570,17 +598,14 @@ class TindahanKo {
         try {
             const video = document.getElementById('scanner-video');
             
-            // Reuse existing stream or create new one
-            if (!this.cameraStream) {
+            // Use existing stream or request new one
+            if (!this.cameraStream || !this.cameraStream.active) {
                 const constraints = {
                     video: {
                         facingMode: 'environment',
                         width: { ideal: 1920, min: 640 },
                         height: { ideal: 1080, min: 480 },
-                        frameRate: { ideal: 30, min: 15 },
-                        focusMode: 'continuous',
-                        exposureMode: 'continuous',
-                        whiteBalanceMode: 'continuous'
+                        frameRate: { ideal: 30, min: 15 }
                     }
                 };
                 
