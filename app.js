@@ -622,28 +622,20 @@ class TindahanKo {
         this.lastScanTime = now;
         const barcode = result.codeResult.code;
         
-        // Check cache first
-        if (this.scanCache.has(barcode)) {
-            const cachedResult = this.scanCache.get(barcode);
-            if (cachedResult.product) {
-                this.processScanResult(cachedResult.product, barcode);
-            } else {
-                this.handleNewProduct(barcode);
-            }
-            return;
-        }
-        
-        // Find product by barcode
+        // Always check fresh data from products array
         const product = this.findProductByBarcode(barcode);
         
         if (product) {
-            // Cache the result
-            this.scanCache.set(barcode, { product, barcode });
-            this.cleanupCache();
-            this.processScanResult(product, barcode);
+            // Product exists - handle based on scan mode
+            if (this.scanMode === 'inventory') {
+                this.closeBarcodeScanner();
+                this.showToast(`${product.name} - Nasa inventory na!`, 'warning');
+            } else {
+                // POS mode - add to cart
+                this.processScanResult(product, barcode);
+            }
         } else {
-            // Cache as unknown product
-            this.scanCache.set(barcode, { product: null, barcode });
+            // Product doesn't exist
             this.handleNewProduct(barcode);
         }
     }
@@ -652,13 +644,6 @@ class TindahanKo {
         this.closeBarcodeScanner();
         
         if (this.scanMode === 'inventory') {
-            // In inventory mode - check if barcode already exists
-            const existingProduct = this.products.find(p => p.barcode === barcode);
-            if (existingProduct) {
-                this.showToast(`${existingProduct.name} - Nasa inventory na!`, 'warning');
-                return;
-            }
-            
             // Open add product modal with barcode
             this.openProductModal(null, barcode);
             this.showToast('Bagong produkto! I-add sa inventory.', 'warning');
@@ -1146,10 +1131,8 @@ class TindahanKo {
             };
             this.products.push(newProduct);
             
-            // Clear cache for this barcode
-            if (barcodeValue) {
-                this.scanCache.delete(barcodeValue);
-            }
+            // Clear entire cache to refresh all lookups
+            this.scanCache.clear();
             
             this.showToast('Product added successfully! ✅', 'success');
         }
