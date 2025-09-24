@@ -19,6 +19,9 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- QuaggaJS for Barcode Scanning -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -58,17 +61,37 @@
     <div id="barcode-modal" class="modal hidden">
         <div class="modal-content barcode-scanner">
             <div class="scanner-header">
-                <h3>📱 Barcode Scanner</h3>
-                <button id="close-scanner" class="btn btn-secondary">✕</button>
+                <h3>📱 Professional Scanner</h3>
+                <div class="scanner-controls">
+                    <button id="toggle-sound" class="btn btn-small">🔊</button>
+                    <button id="close-scanner" class="btn btn-secondary">✕</button>
+                </div>
             </div>
             <div class="scanner-container">
-                <video id="scanner-video" autoplay playsinline></video>
+                <div id="scanner-viewport">
+                    <canvas class="drawingBuffer"></canvas>
+                </div>
                 <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
                     <div class="scanner-line"></div>
                 </div>
             </div>
+            <div class="scanner-stats">
+                <div class="stat-item">
+                    <span class="stat-label">FPS:</span>
+                    <span id="fps-counter">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Scans:</span>
+                    <span id="scan-counter">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Quality:</span>
+                    <span id="quality-indicator">HD</span>
+                </div>
+            </div>
             <div class="scanner-status">
-                <p id="scanner-status-text">I-point ang camera sa barcode...</p>
+                <p id="scanner-status-text">Naghahanda ng scanner...</p>
             </div>
         </div>
     </div>
