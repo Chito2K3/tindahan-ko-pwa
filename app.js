@@ -250,6 +250,13 @@ class TindahanKo {
         document.getElementById('product-search').addEventListener('input', (e) => {
             this.filterProducts(e.target.value);
         });
+        
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrapper')) {
+                document.getElementById('search-dropdown').classList.add('hidden');
+            }
+        });
 
         // Category filters
         document.querySelectorAll('.category-btn').forEach(btn => {
@@ -282,21 +289,77 @@ class TindahanKo {
     }
 
     filterProducts(searchTerm) {
+        const dropdown = document.getElementById('search-dropdown');
+        
+        if (!searchTerm.trim()) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+        
         const filtered = this.products.filter(product =>
             product.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
-        if (filtered.length === 1) {
-            this.addToCart(filtered[0]);
-            document.getElementById('product-search').value = '';
-        } else if (filtered.length === 0) {
-            this.showToast('Walang nahanap na produkto', 'warning');
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="search-item">Walang nahanap na produkto</div>';
+            dropdown.classList.remove('hidden');
+            return;
         }
+        
+        dropdown.innerHTML = '';
+        filtered.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'search-item';
+            item.innerHTML = `
+                <span class="search-item-name">${product.emoji} ${product.name}</span>
+                <span class="search-item-price">₱${product.price.toFixed(2)}</span>
+            `;
+            item.addEventListener('click', () => {
+                this.addToCart(product);
+                document.getElementById('product-search').value = '';
+                dropdown.classList.add('hidden');
+            });
+            dropdown.appendChild(item);
+        });
+        
+        dropdown.classList.remove('hidden');
     }
 
     filterProductsByCategory(category) {
-        // Categories are now just visual indicators
-        return;
+        const searchInput = document.getElementById('product-search');
+        const dropdown = document.getElementById('search-dropdown');
+        
+        let filtered;
+        if (category === 'all') {
+            filtered = this.products;
+        } else {
+            filtered = this.products.filter(product => product.category === category);
+        }
+        
+        if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="search-item">Walang produkto sa kategoryang ito</div>';
+            dropdown.classList.remove('hidden');
+            return;
+        }
+        
+        dropdown.innerHTML = '';
+        filtered.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'search-item';
+            item.innerHTML = `
+                <span class="search-item-name">${product.emoji} ${product.name}</span>
+                <span class="search-item-price">₱${product.price.toFixed(2)}</span>
+            `;
+            item.addEventListener('click', () => {
+                this.addToCart(product);
+                searchInput.value = '';
+                dropdown.classList.add('hidden');
+            });
+            dropdown.appendChild(item);
+        });
+        
+        dropdown.classList.remove('hidden');
+        searchInput.focus();
     }
 
     addToCart(product) {
@@ -850,7 +913,9 @@ class TindahanKo {
             if (e.key === 'Escape' && this.scannerActive) {
                 this.closeBarcodeScanner();
             }
-            if (e.key.toLowerCase() === 's' && !this.scannerActive && this.currentPage === 'benta') {
+            // Only trigger scanner with Ctrl+S, not just 's'
+            if (e.key.toLowerCase() === 's' && e.ctrlKey && !this.scannerActive && this.currentPage === 'benta') {
+                e.preventDefault();
                 this.simulateBarcodeScanning();
             }
         });

@@ -143,17 +143,11 @@
                 </div>
 
                 <div class="search-container">
-                    <input type="text" id="product-search" placeholder="Hanapin ang produkto... 🔍">
+                    <div class="search-wrapper">
+                        <input type="text" id="product-search" placeholder="Hanapin ang produkto... 🔍" autocomplete="off">
+                        <div id="search-dropdown" class="search-dropdown hidden"></div>
+                    </div>
                     <button class="btn btn-secondary" id="barcode-scan">Scan Barcode 📱</button>
-                </div>
-                
-                <!-- Quick Select Categories -->
-                <div class="categories">
-                    <button class="category-btn active" data-category="all">Lahat</button>
-                    <button class="category-btn" data-category="snacks">🍿 Snacks</button>
-                    <button class="category-btn" data-category="drinks">🥤 Inumin</button>
-                    <button class="category-btn" data-category="household">🏠 Gamit</button>
-                    <button class="category-btn" data-category="personal">👤 Personal</button>
                 </div>
 
                 <!-- Shopping Cart -->
