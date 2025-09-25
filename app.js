@@ -40,7 +40,6 @@ class TindahanKo {
         this.showLandingPage();
         this.loadSampleData();
         this.initCameraOnFirstInteraction();
-        this.generateTKIcons();
     }
     
     // Check camera permission status
@@ -1193,38 +1192,47 @@ class TindahanKo {
         });
     }
     
-    // Generate TK logo icons
+    // Generate TK logo icons for Android
     generateTKIcons() {
+        this.createTKIcon(192);
+        this.createTKIcon(512);
+    }
+    
+    createTKIcon(size) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        canvas.width = 192;
-        canvas.height = 192;
+        canvas.width = size;
+        canvas.height = size;
         
-        const gradient = ctx.createLinearGradient(0, 0, 192, 192);
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
         gradient.addColorStop(0, '#ff69b4');
         gradient.addColorStop(0.5, '#ff1493');
         gradient.addColorStop(1, '#dc143c');
         
         ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 192, 192);
+        ctx.fillRect(0, 0, size, size);
         
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 86px serif';
+        ctx.font = `bold ${size * 0.45}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
+        ctx.shadowBlur = size * 0.03;
+        ctx.shadowOffsetX = size * 0.015;
+        ctx.shadowOffsetY = size * 0.015;
         
-        ctx.fillText('TK', 96, 96);
+        ctx.fillText('TK', size/2, size/2);
         
-        // Update favicon
-        const link = document.querySelector('link[sizes="192x192"]');
-        if (link) {
-            link.href = canvas.toDataURL();
-        }
+        // Create blob and download
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `icon-${size}x${size}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
         
         // Toast close
         document.getElementById('toast-close').addEventListener('click', () => {
@@ -1910,17 +1918,22 @@ class TindahanKo {
     // PWA Installation
     setupPWAInstall() {
         window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt fired');
             e.preventDefault();
             this.deferredPrompt = e;
             this.showInstallButton();
             
+            // Show toast to user
+            this.showToast('App can be installed! Look for install button.', 'success');
+            
             // Android-specific: Show install prompt after delay
             if (this.isAndroid()) {
+                console.log('Android detected, will show prompt');
                 setTimeout(() => {
                     if (this.deferredPrompt && !this.isInstalled()) {
                         this.showInstallPrompt();
                     }
-                }, 3000);
+                }, 5000);
             }
         });
 
@@ -1938,10 +1951,18 @@ class TindahanKo {
     }
 
     showInstallButton() {
+        console.log('Showing install button');
         const installBtn = document.getElementById('install-app');
         if (installBtn) {
             installBtn.style.display = 'inline-flex';
             installBtn.disabled = false;
+        }
+        
+        // Also show in landing page
+        const landingBtn = document.getElementById('landing-install-btn');
+        if (landingBtn) {
+            landingBtn.style.display = 'inline-flex';
+            landingBtn.disabled = false;
         }
     }
 
