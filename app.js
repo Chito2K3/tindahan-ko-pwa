@@ -1919,6 +1919,12 @@ class TindahanKo {
             this.deferredPrompt = null;
             this.hideInstallButton();
             this.showToast('App installed successfully! 🎉', 'success');
+            
+            // Track installation
+            console.log('PWA installed successfully');
+            
+            // Hide install prompts
+            document.getElementById('install-prompt-modal').classList.add('hidden');
         });
     }
 
@@ -1948,7 +1954,23 @@ class TindahanKo {
                'serviceWorker' in navigator;
     }
 
+    // Check if app is already installed
+    isInstalled() {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+    }
+    
+    // Detect iOS devices
+    isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    }
+    
     async installPWA() {
+        if (this.isInstalled()) {
+            this.showToast('App already installed! 📱', 'success');
+            return;
+        }
+        
         if (this.deferredPrompt) {
             this.deferredPrompt.prompt();
             const { outcome } = await this.deferredPrompt.userChoice;
@@ -1961,10 +1983,10 @@ class TindahanKo {
             
             this.deferredPrompt = null;
             document.getElementById('install-prompt-modal').classList.add('hidden');
-        } else if (this.isInstallable()) {
-            this.showToast('Please use your browser\'s "Add to Home Screen" option', 'info');
+        } else if (this.isIOS()) {
+            this.showToast('Tap Share button, then "Add to Home Screen" 📱', 'info');
         } else {
-            this.showToast('App is already installed or not available', 'warning');
+            this.showToast('Use browser\'s "Add to Home Screen" option', 'info');
         }
     }
 
