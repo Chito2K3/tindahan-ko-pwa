@@ -1705,6 +1705,14 @@ class TindahanKo {
         document.getElementById('install-prompt-no').addEventListener('click', () => {
             this.dismissInstallPrompt();
         });
+        
+        document.getElementById('show-install-info').addEventListener('click', () => {
+            this.showInstallInfo();
+        });
+        
+        document.getElementById('reset-app').addEventListener('click', () => {
+            this.resetApp();
+        });
     }
 
     loadSettings() {
@@ -1987,7 +1995,8 @@ class TindahanKo {
     // Check if app is already installed
     isInstalled() {
         return window.matchMedia('(display-mode: standalone)').matches ||
-               window.navigator.standalone === true;
+               window.navigator.standalone === true ||
+               document.referrer.includes('android-app://');
     }
     
     // Detect iOS devices
@@ -2029,6 +2038,41 @@ class TindahanKo {
 
     dismissInstallPrompt() {
         document.getElementById('install-prompt-modal').classList.add('hidden');
+    }
+    
+    showInstallInfo() {
+        if (this.isInstalled()) {
+            this.showToast('App is already installed! Check your home screen or app drawer.', 'success');
+        } else if (this.deferredPrompt) {
+            this.installPWA();
+        } else {
+            let message = 'To install: ';
+            if (this.isAndroid()) {
+                message += 'Tap menu (⋮) then "Add to Home screen"';
+            } else if (this.isIOS()) {
+                message += 'Tap Share button, then "Add to Home Screen"';
+            } else {
+                message += 'Look for install button in address bar';
+            }
+            this.showToast(message, 'info');
+        }
+    }
+    
+    resetApp() {
+        if (confirm('Sigurado ka bang gusto mong i-reset ang lahat ng data? Hindi na ito mababalik.')) {
+            // Clear all localStorage
+            localStorage.clear();
+            
+            // Clear cache
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            
+            // Reload to landing page
+            window.location.reload();
+        }
     }
 
     showLandingPage() {
