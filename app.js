@@ -1926,19 +1926,13 @@ class TindahanKo {
     // PWA Installation
     setupPWAInstall() {
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('beforeinstallprompt fired');
+            console.log('PWA install prompt available');
             e.preventDefault();
             this.deferredPrompt = e;
-            
-            // Enable install button on landing page
-            const landingBtn = document.getElementById('landing-install-btn');
-            if (landingBtn) {
-                landingBtn.disabled = false;
-                landingBtn.textContent = 'Install App 📱';
-            }
         });
 
         window.addEventListener('appinstalled', () => {
+            console.log('PWA installed successfully');
             this.deferredPrompt = null;
             
             // Hide landing page and proceed to setup
@@ -1946,7 +1940,6 @@ class TindahanKo {
             this.checkFirstTimeSetup();
             
             this.showToast('App installed! Setting up your store... 🎉', 'success');
-            console.log('PWA installed successfully');
         });
     }
 
@@ -2100,25 +2093,17 @@ class TindahanKo {
         const isSetupComplete = localStorage.getItem('tindahan_setup_complete');
         const isInstalled = this.isInstalled();
         
-        if (!isSetupComplete && !isInstalled) {
-            // First time user, not installed - show landing page
+        if (!isSetupComplete) {
+            // Show landing page for first time users
             document.getElementById('landing-page').classList.remove('hidden');
             document.getElementById('app').classList.add('hidden');
             
-            // Prepare install button
+            // Always show install button initially
             const installBtn = document.getElementById('landing-install-btn');
             if (installBtn) {
-                installBtn.disabled = !this.deferredPrompt;
-                if (this.deferredPrompt) {
-                    installBtn.textContent = 'Install App 📱';
-                } else {
-                    installBtn.textContent = 'Continue to Setup ➡️';
-                }
+                installBtn.textContent = 'Install App 📱';
+                installBtn.disabled = false;
             }
-        } else if (!isSetupComplete && isInstalled) {
-            // Installed but not setup - go to setup
-            this.hideLandingPage();
-            this.checkFirstTimeSetup();
         } else {
             // Setup complete - go to app
             this.hideLandingPage();
@@ -2131,35 +2116,36 @@ class TindahanKo {
     }
 
     async installFromLanding() {
+        // Check if already installed
         if (this.isInstalled()) {
-            // Already installed, proceed to setup
             this.hideLandingPage();
             this.checkFirstTimeSetup();
             return;
         }
 
+        // Try native install prompt first
         if (this.deferredPrompt) {
             try {
-                // Show native install prompt
-                this.deferredPrompt.prompt();
+                await this.deferredPrompt.prompt();
                 const { outcome } = await this.deferredPrompt.userChoice;
                 
                 if (outcome === 'accepted') {
-                    // Installation will be handled by 'appinstalled' event
                     this.showToast('Installing app... 📲', 'success');
+                    // appinstalled event will handle the rest
                 } else {
-                    // User declined, proceed to setup anyway
-                    this.hideLandingPage();
-                    this.checkFirstTimeSetup();
+                    this.showToast('Installation cancelled. Proceeding to setup...', 'info');
+                    setTimeout(() => {
+                        this.hideLandingPage();
+                        this.checkFirstTimeSetup();
+                    }, 1500);
                 }
-                
                 this.deferredPrompt = null;
             } catch (error) {
-                console.error('Install prompt error:', error);
-                this.proceedWithoutInstall();
+                console.error('Install error:', error);
+                this.showManualInstallInstructions();
             }
         } else {
-            // No install prompt available, show manual instructions
+            // Show manual install instructions for browsers without prompt
             this.showManualInstallInstructions();
         }
     }
@@ -2170,7 +2156,7 @@ class TindahanKo {
     }
 
     showManualInstallInstructions() {
-        let message = 'To install: ';
+        let message;
         
         if (this.isIOS()) {
             message = 'iOS: Tap Share → "Add to Home Screen" 📱';
@@ -2182,11 +2168,15 @@ class TindahanKo {
         
         this.showToast(message, 'info');
         
-        // Proceed to setup after showing instructions
-        setTimeout(() => {
-            this.hideLandingPage();
-            this.checkFirstTimeSetup();
-        }, 4000);
+        // Change button text and proceed to setup after delay
+        const installBtn = document.getElementById('landing-install-btn');
+        if (installBtn) {
+            installBtn.textContent = 'Continue to Setup ➡️';
+            installBtn.onclick = () => {
+                this.hideLandingPage();
+                this.checkFirstTimeSetup();
+            };
+        }
     }
 }
 
