@@ -40,6 +40,7 @@ class TindahanKo {
         this.showLandingPage();
         this.loadSampleData();
         this.initCameraOnFirstInteraction();
+        this.generateTKIcons();
     }
     
     // Check camera permission status
@@ -1190,6 +1191,40 @@ class TindahanKo {
                 this.cameraStream.getTracks().forEach(track => track.stop());
             }
         });
+    }
+    
+    // Generate TK logo icons
+    generateTKIcons() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = 192;
+        canvas.height = 192;
+        
+        const gradient = ctx.createLinearGradient(0, 0, 192, 192);
+        gradient.addColorStop(0, '#ff69b4');
+        gradient.addColorStop(0.5, '#ff1493');
+        gradient.addColorStop(1, '#dc143c');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 192, 192);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 86px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+        
+        ctx.fillText('TK', 96, 96);
+        
+        // Update favicon
+        const link = document.querySelector('link[sizes="192x192"]');
+        if (link) {
+            link.href = canvas.toDataURL();
+        }
         
         // Toast close
         document.getElementById('toast-close').addEventListener('click', () => {
