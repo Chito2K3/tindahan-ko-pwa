@@ -1929,32 +1929,24 @@ class TindahanKo {
             console.log('beforeinstallprompt fired');
             e.preventDefault();
             this.deferredPrompt = e;
-            this.showInstallButton();
             
-            // Show toast to user
-            this.showToast('App can be installed! Look for install button.', 'success');
-            
-            // Android-specific: Show install prompt after delay
-            if (this.isAndroid()) {
-                console.log('Android detected, will show prompt');
-                setTimeout(() => {
-                    if (this.deferredPrompt && !this.isInstalled()) {
-                        this.showInstallPrompt();
-                    }
-                }, 5000);
+            // Enable install button on landing page
+            const landingBtn = document.getElementById('landing-install-btn');
+            if (landingBtn) {
+                landingBtn.disabled = false;
+                landingBtn.textContent = 'Install App 📱';
             }
         });
 
         window.addEventListener('appinstalled', () => {
             this.deferredPrompt = null;
-            this.hideInstallButton();
-            this.showToast('App installed successfully! 🎉', 'success');
             
-            // Track installation
+            // Hide landing page and proceed to setup
+            this.hideLandingPage();
+            this.checkFirstTimeSetup();
+            
+            this.showToast('App installed! Setting up your store... 🎉', 'success');
             console.log('PWA installed successfully');
-            
-            // Hide install prompts
-            document.getElementById('install-prompt-modal').classList.add('hidden');
         });
     }
 
@@ -1988,25 +1980,54 @@ class TindahanKo {
     }
 
     isInstallable() {
-        return !window.matchMedia('(display-mode: standalone)').matches && 
-               'serviceWorker' in navigator;
+        return !this.isInstalled() && this.isPWASupported();
     }
 
     // Check if app is already installed
     isInstalled() {
-        return window.matchMedia('(display-mode: standalone)').matches ||
-               window.navigator.standalone === true ||
-               document.referrer.includes('android-app://');
+        // Check for standalone mode (PWA installed)
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return true;
+        }
+        
+        // Check for iOS standalone
+        if (window.navigator.standalone === true) {
+            return true;
+        }
+        
+        // Check for Android app context
+        if (document.referrer.includes('android-app://')) {
+            return true;
+        }
+        
+        // Check for TWA (Trusted Web Activity)
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+            return true;
+        }
+        
+        return false;
     }
     
     // Detect iOS devices
     isIOS() {
-        return /iPad|iPhone|iPod/.test(navigator.userAgent);
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
     
     // Detect Android devices
     isAndroid() {
         return /Android/.test(navigator.userAgent);
+    }
+    
+    // Detect mobile devices
+    isMobile() {
+        return this.isIOS() || this.isAndroid() || /Mobile|Tablet/.test(navigator.userAgent);
+    }
+    
+    // Check if PWA installation is supported
+    isPWASupported() {
+        return 'serviceWorker' in navigator && 
+               ('BeforeInstallPromptEvent' in window || this.isIOS());
     }
     
     async installPWA() {
@@ -2016,23 +2037,23 @@ class TindahanKo {
         }
         
         if (this.deferredPrompt) {
-            this.deferredPrompt.prompt();
-            const { outcome } = await this.deferredPrompt.userChoice;
-            
-            if (outcome === 'accepted') {
-                this.showToast('Installing app... 📲', 'success');
-            } else {
-                this.showToast('Installation cancelled', 'warning');
+            try {
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    this.showToast('Installing app... 📲', 'success');
+                } else {
+                    this.showToast('Installation cancelled', 'warning');
+                }
+                
+                this.deferredPrompt = null;
+            } catch (error) {
+                console.error('Install error:', error);
+                this.showManualInstallInstructions();
             }
-            
-            this.deferredPrompt = null;
-            document.getElementById('install-prompt-modal').classList.add('hidden');
-        } else if (this.isIOS()) {
-            this.showToast('Tap Share button, then "Add to Home Screen" 📱', 'info');
-        } else if (this.isAndroid()) {
-            this.showToast('Tap menu (⋮) then "Add to Home screen" 📱', 'info');
         } else {
-            this.showToast('Use browser\'s "Add to Home Screen" option', 'info');
+            this.showManualInstallInstructions();
         }
     }
 
@@ -2076,9 +2097,30 @@ class TindahanKo {
     }
 
     showLandingPage() {
-        if (!localStorage.getItem('tindahan_setup_complete')) {
+        const isSetupComplete = localStorage.getItem('tindahan_setup_complete');
+        const isInstalled = this.isInstalled();
+        
+        if (!isSetupComplete && !isInstalled) {
+            // First time user, not installed - show landing page
             document.getElementById('landing-page').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            
+            // Prepare install button
+            const installBtn = document.getElementById('landing-install-btn');
+            if (installBtn) {
+                installBtn.disabled = !this.deferredPrompt;
+                if (this.deferredPrompt) {
+                    installBtn.textContent = 'Install App 📱';
+                } else {
+                    installBtn.textContent = 'Continue to Setup ➡️';
+                }
+            }
+        } else if (!isSetupComplete && isInstalled) {
+            // Installed but not setup - go to setup
+            this.hideLandingPage();
+            this.checkFirstTimeSetup();
         } else {
+            // Setup complete - go to app
             this.hideLandingPage();
             this.showApp();
         }
@@ -2088,14 +2130,63 @@ class TindahanKo {
         document.getElementById('landing-page').classList.add('hidden');
     }
 
-    installFromLanding() {
-        if (this.deferredPrompt) {
-            this.installPWA();
-        } else {
-            // If no install prompt, proceed to setup
+    async installFromLanding() {
+        if (this.isInstalled()) {
+            // Already installed, proceed to setup
             this.hideLandingPage();
             this.checkFirstTimeSetup();
+            return;
         }
+
+        if (this.deferredPrompt) {
+            try {
+                // Show native install prompt
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    // Installation will be handled by 'appinstalled' event
+                    this.showToast('Installing app... 📲', 'success');
+                } else {
+                    // User declined, proceed to setup anyway
+                    this.hideLandingPage();
+                    this.checkFirstTimeSetup();
+                }
+                
+                this.deferredPrompt = null;
+            } catch (error) {
+                console.error('Install prompt error:', error);
+                this.proceedWithoutInstall();
+            }
+        } else {
+            // No install prompt available, show manual instructions
+            this.showManualInstallInstructions();
+        }
+    }
+
+    proceedWithoutInstall() {
+        this.hideLandingPage();
+        this.checkFirstTimeSetup();
+    }
+
+    showManualInstallInstructions() {
+        let message = 'To install: ';
+        
+        if (this.isIOS()) {
+            message = 'iOS: Tap Share → "Add to Home Screen" 📱';
+        } else if (this.isAndroid()) {
+            message = 'Android: Tap menu (⋮) → "Add to Home screen" 📱';
+        } else {
+            message = 'Look for install option in browser menu 📱';
+        }
+        
+        this.showToast(message, 'info');
+        
+        // Proceed to setup after showing instructions
+        setTimeout(() => {
+            this.hideLandingPage();
+            this.checkFirstTimeSetup();
+        }, 4000);
     }
 }
 

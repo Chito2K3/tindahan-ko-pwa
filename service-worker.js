@@ -1,13 +1,12 @@
-const CACHE_NAME = 'tindahan-ko-v1.0.0';
+const CACHE_NAME = 'tindahan-ko-v1.1.0';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;600&family=Poppins:wght@300;400;500;600;700&display=swap'
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  './manifest.json',
+  'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@400;600&family=Poppins:wght@300;400;500;600;700&display=swap',
+  'https://unpkg.com/@zxing/library@latest/umd/index.min.js'
 ];
 
 // Install Service Worker
@@ -16,9 +15,10 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
       })
   );
+  self.skipWaiting();
 });
 
 // Fetch Event - Serve from cache, fallback to network
@@ -58,15 +58,18 @@ self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
 
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      self.clients.claim()
+    ])
   );
 });
 
