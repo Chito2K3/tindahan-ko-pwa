@@ -2,8 +2,8 @@
   "name": "Tindahan Ko - Para sa mga Reyna ng Tahanan",
   "short_name": "Tindahan Ko",
   "description": "POS at Inventory System para sa mga Sari-Sari Store",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#ffeef8",
@@ -15,25 +15,25 @@
   "lang": "tl",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192x192/ff69b4/ffffff?text=TK",
+      "src": "https://img.icons8.com/color/192/000000/shopping-cart.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://via.placeholder.com/512x512/ff69b4/ffffff?text=TK",
+      "src": "https://img.icons8.com/color/512/000000/shopping-cart.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://via.placeholder.com/192x192/ff69b4/ffffff?text=TK",
+      "src": "https://img.icons8.com/color/192/000000/shopping-cart.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "https://via.placeholder.com/512x512/ff69b4/ffffff?text=TK",
+      "src": "https://img.icons8.com/color/512/000000/shopping-cart.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
