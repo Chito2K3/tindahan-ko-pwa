@@ -22,7 +22,9 @@ class TindahanKo {
         this.scanCache = new Map();
         this.audioContext = null;
         this.scanMode = 'pos'; // 'pos' or 'inventory'
-        this.cameraStream = null; // Persistent camera stream
+        this.cameraStream = null;
+        this.cameraPermissionGranted = false;
+        this.cameraInitialized = false;
         
         // PWA Install
         this.deferredPrompt = null;
@@ -40,27 +42,62 @@ class TindahanKo {
         this.initCameraOnFirstInteraction();
     }
     
+    // Check camera permission status
+    async checkCameraPermission() {
+        try {
+            const result = await navigator.permissions.query({ name: 'camera' });
+            return result.state === 'granted';
+        } catch (error) {
+            return false;
+        }
+    }
+    
+    // Initialize camera with persistent stream
+    async initPersistentCamera() {
+        if (this.cameraInitialized) return true;
+        
+        try {
+            const hasPermission = await this.checkCameraPermission();
+            
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1920, min: 640 },
+                    height: { ideal: 1080, min: 480 },
+                    frameRate: { ideal: 30, min: 15 }
+                }
+            };
+            
+            this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            this.cameraPermissionGranted = true;
+            this.cameraInitialized = true;
+            
+            // Keep stream alive by creating hidden video element
+            if (!document.getElementById('hidden-video')) {
+                const hiddenVideo = document.createElement('video');
+                hiddenVideo.id = 'hidden-video';
+                hiddenVideo.style.display = 'none';
+                hiddenVideo.muted = true;
+                hiddenVideo.autoplay = true;
+                hiddenVideo.playsInline = true;
+                document.body.appendChild(hiddenVideo);
+                hiddenVideo.srcObject = this.cameraStream;
+            }
+            
+            console.log('Camera initialized and stream persisted');
+            return true;
+            
+        } catch (error) {
+            console.error('Camera initialization failed:', error);
+            this.cameraPermissionGranted = false;
+            return false;
+        }
+    }
+    
     // Initialize camera on first user interaction
     initCameraOnFirstInteraction() {
         const initCamera = async () => {
-            try {
-                if (!this.cameraStream) {
-                    const constraints = {
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 1920, min: 640 },
-                            height: { ideal: 1080, min: 480 },
-                            frameRate: { ideal: 30, min: 15 }
-                        }
-                    };
-                    this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    console.log('Camera initialized successfully');
-                }
-            } catch (error) {
-                console.log('Camera will be requested when needed:', error);
-            }
-            document.removeEventListener('click', initCamera);
-            document.removeEventListener('touchstart', initCamera);
+            await this.initPersistentCamera();
         };
         
         document.addEventListener('click', initCamera, { once: true });
@@ -232,6 +269,11 @@ class TindahanKo {
         this.applyTheme(this.currentTheme);
         this.switchPage('benta');
         this.updateInventoryStats();
+        
+        // Initialize camera early for seamless scanning
+        setTimeout(() => {
+            this.initPersistentCamera();
+        }, 1000);
     }
 
     updateStoreDisplay() {
@@ -562,11 +604,21 @@ class TindahanKo {
 
     async simulateBarcodeScanning() {
         this.initAudioSystem();
+        
+        // Check if camera is ready
+        if (!this.cameraInitialized) {
+            const success = await this.initPersistentCamera();
+            if (!success) {
+                this.showToast('Hindi ma-access ang camera. Subukang i-allow ang permission.', 'error');
+                return;
+            }
+        }
+        
         try {
             await this.startProfessionalScanner();
         } catch (error) {
             console.error('Scanner error:', error);
-            this.showToast('Hindi ma-access ang camera. Subukang i-allow ang permission.', 'error');
+            this.showToast('May problema sa camera. Subukang i-refresh ang page.', 'error');
         }
     }
 
@@ -598,21 +650,21 @@ class TindahanKo {
         try {
             const video = document.getElementById('scanner-video');
             
-            // Use existing stream or request new one
-            if (!this.cameraStream || !this.cameraStream.active) {
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1920, min: 640 },
-                        height: { ideal: 1080, min: 480 },
-                        frameRate: { ideal: 30, min: 15 }
-                    }
-                };
-                
-                this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            // Ensure camera is initialized
+            if (!this.cameraInitialized) {
+                const success = await this.initPersistentCamera();
+                if (!success) {
+                    throw new Error('Camera initialization failed');
+                }
             }
             
-            video.srcObject = this.cameraStream;
+            // Clone the stream for the scanner video
+            if (this.cameraStream && this.cameraStream.active) {
+                video.srcObject = this.cameraStream;
+            } else {
+                throw new Error('Camera stream not available');
+            }
+            
             await new Promise(resolve => video.onloadedmetadata = resolve);
             
             // Enhanced ZXing configuration
@@ -924,9 +976,10 @@ class TindahanKo {
         const video = document.getElementById('scanner-video');
         if (video) {
             video.srcObject = null;
+            video.pause();
         }
         
-        // Keep camera stream alive for next use
+        // Keep camera stream alive in hidden video
         
         document.getElementById('barcode-modal').classList.add('hidden');
         document.getElementById('fps-counter').textContent = '0';
@@ -1119,7 +1172,7 @@ class TindahanKo {
         // Handle page visibility to manage camera stream
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && this.cameraStream) {
-                // Pause stream when page is hidden
+                // Pause stream when page is hidden (battery optimization)
                 this.cameraStream.getVideoTracks().forEach(track => {
                     track.enabled = false;
                 });
@@ -1128,6 +1181,13 @@ class TindahanKo {
                 this.cameraStream.getVideoTracks().forEach(track => {
                     track.enabled = true;
                 });
+            }
+        });
+        
+        // Handle beforeunload to clean up properly
+        window.addEventListener('beforeunload', () => {
+            if (this.cameraStream) {
+                this.cameraStream.getTracks().forEach(track => track.stop());
             }
         });
         

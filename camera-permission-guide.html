@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Permission Guide - Tindahan Ko</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff69b4, #ff1493, #dc143c);
+            color: white;
+            padding: 2rem;
+            margin: 0;
+        }
+        .guide-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { text-align: center; margin-bottom: 2rem; }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .step h3 { margin-top: 0; color: #ffb6c1; }
+        .browser-specific { margin-top: 2rem; }
+        .tip {
+            background: rgba(72, 187, 120, 0.2);
+            border-left: 4px solid #48bb78;
+            padding: 1rem;
+            border-radius: 0 10px 10px 0;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="guide-container">
+        <h1>📱 Camera Permission Setup Guide</h1>
+        
+        <div class="step">
+            <h3>🎯 Goal: One-Time Camera Permission</h3>
+            <p>Set up your browser to allow camera access permanently for Tindahan Ko, eliminating repeated permission prompts.</p>
+        </div>
+
+        <div class="step">
+            <h3>📋 Step 1: Initial Permission</h3>
+            <p>When you first open the scanner, click <strong>"ALLOW"</strong> when prompted for camera access.</p>
+        </div>
+
+        <div class="step">
+            <h3>🔒 Step 2: Make Permission Permanent</h3>
+            <p><strong>Chrome/Edge:</strong></p>
+            <ul>
+                <li>Click the 🔒 lock icon in the address bar</li>
+                <li>Set Camera to "Allow"</li>
+                <li>Refresh the page</li>
+            </ul>
+            
+            <p><strong>Safari (iOS):</strong></p>
+            <ul>
+                <li>Go to Settings > Safari > Camera</li>
+                <li>Set to "Allow"</li>
+                <li>Or tap "AA" in address bar > Website Settings > Camera > Allow</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>✅ Step 3: Verify Setup</h3>
+            <p>After setting permissions:</p>
+            <ul>
+                <li>Refresh the app</li>
+                <li>Click "Scan Barcode"</li>
+                <li>Scanner should open instantly without prompts</li>
+            </ul>
+        </div>
+
+        <div class="tip">
+            <strong>💡 Pro Tip:</strong> Add Tindahan Ko to your home screen for the best native app experience!
+        </div>
+
+        <div class="browser-specific">
+            <h3>🌐 Browser-Specific Notes</h3>
+            <p><strong>Chrome:</strong> Best performance, full PWA support</p>
+            <p><strong>Safari:</strong> May require manual permission setup</p>
+            <p><strong>Firefox:</strong> Good compatibility, check privacy settings</p>
+            <p><strong>Edge:</strong> Similar to Chrome, excellent support</p>
+        </div>
+
+        <div class="step">
+            <h3>🔧 Troubleshooting</h3>
+            <p>If you still see permission prompts:</p>
+            <ul>
+                <li>Clear browser cache and cookies</li>
+                <li>Check if camera is blocked in browser settings</li>
+                <li>Try incognito/private mode first, then normal mode</li>
+                <li>Ensure HTTPS connection (required for camera access)</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
