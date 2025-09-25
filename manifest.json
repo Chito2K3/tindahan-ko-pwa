@@ -7,6 +7,8 @@
   "background_color": "#ffeef8",
   "theme_color": "#ff69b4",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone"],
   "categories": ["business", "productivity", "shopping"],
   "lang": "tl",
   "icons": [
@@ -14,13 +16,13 @@
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23ff69b4'/><stop offset='50%' stop-color='%23ff1493'/><stop offset='100%' stop-color='%23dc143c'/></linearGradient></defs><rect width='192' height='192' fill='url(%23g)' rx='19'/><text x='96' y='125' font-family='serif' font-size='86' font-weight='bold' text-anchor='middle' fill='white'>TK</text></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23ff69b4'/><stop offset='50%' stop-color='%23ff1493'/><stop offset='100%' stop-color='%23dc143c'/></linearGradient></defs><rect width='512' height='512' fill='url(%23g)' rx='51'/><text x='256' y='335' font-family='serif' font-size='230' font-weight='bold' text-anchor='middle' fill='white'>TK</text></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [

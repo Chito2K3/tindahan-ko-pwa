@@ -1913,6 +1913,15 @@ class TindahanKo {
             e.preventDefault();
             this.deferredPrompt = e;
             this.showInstallButton();
+            
+            // Android-specific: Show install prompt after delay
+            if (this.isAndroid()) {
+                setTimeout(() => {
+                    if (this.deferredPrompt && !this.isInstalled()) {
+                        this.showInstallPrompt();
+                    }
+                }, 3000);
+            }
         });
 
         window.addEventListener('appinstalled', () => {
@@ -1965,6 +1974,11 @@ class TindahanKo {
         return /iPad|iPhone|iPod/.test(navigator.userAgent);
     }
     
+    // Detect Android devices
+    isAndroid() {
+        return /Android/.test(navigator.userAgent);
+    }
+    
     async installPWA() {
         if (this.isInstalled()) {
             this.showToast('App already installed! 📱', 'success');
@@ -1985,6 +1999,8 @@ class TindahanKo {
             document.getElementById('install-prompt-modal').classList.add('hidden');
         } else if (this.isIOS()) {
             this.showToast('Tap Share button, then "Add to Home Screen" 📱', 'info');
+        } else if (this.isAndroid()) {
+            this.showToast('Tap menu (⋮) then "Add to Home screen" 📱', 'info');
         } else {
             this.showToast('Use browser\'s "Add to Home Screen" option', 'info');
         }
